@@ -2,5 +2,5 @@
   "name": "ClearPDF Local",
   "description": "Fast, private, and lightweight offline PDF reader & document scanner.",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": []
 }

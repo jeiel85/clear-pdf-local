@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="빠르고 안전하며 오프라인에서 동작하는 가벼운 PDF 리더 및 문서 스캐너 - ClearPDF Local. 인터넷 권한 없이도 PDF 뷰어, 문서 스캔, 병합 및 분할을 완벽하게 지원합니다.">
+  <meta name="theme-color" content="#0a0f1d">
+  <link rel="icon" type="image/png" href="assets/key-visual.png">
+  <meta property="og:title" content="ClearPDF Local - Fast, Private, Offline PDF Reader & Scanner">
+  <meta property="og:description" content="인터넷 권한이 없는 안전한 로컬 우선 PDF 뷰어 및 문서 스캐너. 병합, 분할, 이미지 변환 제공.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://jeiel85.github.io/clear-pdf-local/">
+  <meta property="og:image" content="https://jeiel85.github.io/clear-pdf-local/assets/key-visual.png">
+  <title>ClearPDF Local - Fast, Private, Offline PDF Reader & Document Scanner</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Outfit:wght@300;400;600;800&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --midnight: #0a0f1d;
+      --card-bg: rgba(18, 25, 47, 0.65);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --neon-cyan: #00f2fe;
+      --neon-blue: #4facfe;
+      --soft-teal: #80cbc4;
+      --warm-ivory: #f8fafc;
+      --muted-slate: #94a3b8;
+      --glow-cyan: rgba(0, 242, 254, 0.25);
+      --glow-blue: rgba(79, 172, 254, 0.25);
+      --shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+      --transition-speed: 0.4s;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--midnight);
+      color: var(--warm-ivory);
+      font-family: 'Outfit', 'Noto Sans KR', 'Inter', sans-serif;
+      line-height: 1.6;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(0, 242, 254, 0.08), transparent 45%),
+        radial-gradient(circle at 85% 85%, rgba(79, 172, 254, 0.06), transparent 45%);
+    }
+
+    .shell {
+      width: min(1200px, calc(100% - 48px));
+      margin: 0 auto;
+    }
+
+    /* Navigation */
+    header {
+      border-bottom: 1px solid var(--border-color);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10, 15, 29, 0.85);
+    }
+
+    .nav-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      font-size: 1.5rem;
+      letter-spacing: -0.5px;
+      color: var(--warm-ivory);
+      text-decoration: none;
+    }
+
+    .brand span {
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+    }
+
+    .nav-links a {
+      color: var(--muted-slate);
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: color 0.3s;
+    }
+
+    .nav-links a:hover {
+      color: var(--warm-ivory);
+    }
+
+    .lang-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border-color);
+      color: var(--warm-ivory);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    .lang-btn:hover {
+      background: rgba(0, 242, 254, 0.15);
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 10px rgba(0, 242, 254, 0.3);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 90px 0 50px 0;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      background: rgba(0, 242, 254, 0.1);
+      border: 1px solid rgba(0, 242, 254, 0.2);
+      border-radius: 30px;
+      color: var(--neon-cyan);
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 24px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      animation: pulseGlow 3s infinite alternate;
+    }
+
+    @keyframes pulseGlow {
+      0% { box-shadow: 0 0 5px rgba(0, 242, 254, 0.1); }
+      100% { box-shadow: 0 0 15px rgba(0, 242, 254, 0.3); }
+    }
+
+    .hero h1 {
+      font-size: clamp(2.6rem, 6vw, 4.5rem);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 24px;
+      letter-spacing: -1.5px;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p {
+      font-size: clamp(1.1rem, 3.2vw, 1.35rem);
+      color: var(--muted-slate);
+      max-width: 760px;
+      margin: 0 auto 44px auto;
+      font-weight: 300;
+    }
+
+    .cta-group {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      margin-bottom: 60px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+      color: #040813;
+      box-shadow: 0 8px 25px rgba(0, 242, 254, 0.25);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(0, 242, 254, 0.4);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--warm-ivory);
+      border: 1px solid var(--border-color);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--muted-slate);
+      transform: translateY(-2px);
+    }
+
+    /* Key Visual Container */
+    .visual-wrapper {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 28px;
+      padding: 24px;
+      max-width: 900px;
+      margin: 0 auto 100px auto;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .visual-wrapper img {
+      width: 100%;
+      height: auto;
+      border-radius: 18px;
+      display: block;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    /* Scanner Simulation Section */
+    .scanner-simulation {
+      padding: 80px 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 60px;
+      align-items: center;
+      margin-bottom: 100px;
+    }
+
+    @media (max-width: 768px) {
+      .scanner-simulation {
+        grid-template-columns: 1fr;
+        text-align: center;
+        gap: 40px;
+      }
+    }
+
+    .scanner-info h2 {
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-weight: 800;
+      margin-bottom: 20px;
+      letter-spacing: -0.5px;
+      line-height: 1.25;
+    }
+
+    .scanner-info h2 span {
+      background: linear-gradient(135deg, var(--neon-cyan), var(--neon-blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .scanner-info p {
+      color: var(--muted-slate);
+      font-size: 1.1rem;
+      margin-bottom: 30px;
+      font-weight: 300;
+    }
+
+    /* Interactive Scanner Visual */
+    .scanner-display {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 24px;
+      height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .mock-doc {
+      width: 170px;
+      height: 220px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 2px dashed rgba(0, 242, 254, 0.3);
+      border-radius: 8px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 12px;
+      z-index: 2;
+    }
+
+    .doc-line {
+      height: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      width: 100%;
+    }
+
+    .doc-line:nth-child(2) { width: 80%; }
+    .doc-line:nth-child(3) { width: 90%; }
+    .doc-line:nth-child(4) { 
+      height: 60px; 
+      background: rgba(0, 242, 254, 0.05); 
+      border: 1px solid rgba(0, 242, 254, 0.2); 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      font-size: 0.75rem;
+      color: var(--neon-cyan);
+      font-weight: 600;
+    }
+
+    .scan-beam {
+      position: absolute;
+      width: 100%;
+      height: 6px;
+      background: linear-gradient(to bottom, transparent, var(--neon-cyan), transparent);
+      box-shadow: 0 0 15px var(--neon-cyan);
+      top: 0;
+      left: 0;
+      z-index: 3;
+      animation: scanAnimation 4s infinite ease-in-out;
+    }
+
+    @keyframes scanAnimation {
+      0% { top: 10%; }
+      50% { top: 90%; }
+      100% { top: 10%; }
+    }
+
+    /* Features Grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 24px;
+      margin-bottom: 100px;
+    }
+
+    .feature-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 32px;
+      transition: all var(--transition-speed) cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(0, 242, 254, 0.3);
+      box-shadow: 0 12px 30px rgba(0, 242, 254, 0.08);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(0, 242, 254, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--neon-cyan);
+      font-size: 1.4rem;
+      font-weight: 800;
+    }
+
+    .feature-card h3 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--warm-ivory);
+    }
+
+    .feature-card p {
+      color: var(--muted-slate);
+      font-size: 0.95rem;
+      font-weight: 300;
+      line-height: 1.5;
+    }
+
+    /* Download Section */
+    .download-section {
+      background: radial-gradient(circle at 50% 50%, rgba(79, 172, 254, 0.12), transparent 60%), var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 28px;
+      padding: 60px 40px;
+      text-align: center;
+      margin-bottom: 100px;
+      box-shadow: var(--shadow);
+    }
+
+    .download-section h2 {
+      font-size: 2rem;
+      font-weight: 800;
+      margin-bottom: 16px;
+    }
+
+    .download-section p {
+      color: var(--muted-slate);
+      max-width: 600px;
+      margin: 0 auto 36px auto;
+      font-weight: 300;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border-color);
+      padding: 40px 0;
+      text-align: center;
+      color: var(--muted-slate);
+      font-size: 0.9rem;
+    }
+
+    .footer-links {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      margin-bottom: 16px;
+    }
+
+    .footer-links a {
+      color: var(--muted-slate);
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+
+    .footer-links a:hover {
+      color: var(--neon-cyan);
+    }
+
+    /* Localization Classes */
+    [lang="ko"] .lang-en,
+    [lang="en"] .lang-ko {
+      display: none !important;
+    }
+  </style>
+</head>
+<body lang="ko">
+
+  <header>
+    <div class="shell nav-container">
+      <a href="#" class="brand">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: block;">
+          <rect x="3" y="3" width="18" height="18" rx="4" fill="url(#brandGrad)" />
+          <path d="M7 8H17V10H7V8ZM7 12H17V14H7V12ZM7 16H13V18H7V16Z" fill="#0A0F1D" />
+          <defs>
+            <linearGradient id="brandGrad" x1="3" y1="3" x2="21" y2="21" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#00f2fe"/>
+              <stop offset="1" stop-color="#4facfe"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <span>ClearPDF</span> Local
+      </a>
+      <div class="nav-links">
+        <a href="#features" class="lang-ko">주요 기능</a>
+        <a href="#features" class="lang-en">Features</a>
+        <a href="#scanner" class="lang-ko">문서 스캔</a>
+        <a href="#scanner" class="lang-en">Scanner</a>
+        <a href="#download" class="lang-ko">다운로드</a>
+        <a href="#download" class="lang-en">Download</a>
+        <button class="lang-btn" onclick="toggleLanguage()">EN</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="shell">
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-badge">
+        <span class="lang-ko">100% 오프라인 & 로컬 우선</span>
+        <span class="lang-en">100% Offline & Local-First</span>
+      </div>
+      
+      <h1 class="lang-ko">개인정보 보호를 위한<br><span>가장 안전하고 빠른</span> PDF 도구</h1>
+      <h1 class="lang-en">Fast. Private. Offline.<br>The Secure <span>ClearPDF Local</span></h1>
+      
+      <p class="lang-ko">ClearPDF Local은 외부 서버 업로드 없이 오직 기기 내부에서만 작동하는 프라이빗 PDF 뷰어 및 문서 스캐너입니다. 소중한 개인정보가 담긴 영수증, 계약서, 문서를 오프라인 환경에서 완벽하게 처리하세요.</p>
+      <p class="lang-en">A secure, local-first document reader and camera scanner that operates fully on-device. Read, scan, merge, and split files without any network transfers or privacy leaks.</p>
+      
+      <div class="cta-group">
+        <a href="#download" class="btn btn-primary">
+          <span class="lang-ko">앱 다운로드 (AAB)</span>
+          <span class="lang-en">Download App (AAB)</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+        </a>
+        <a href="https://github.com/jeiel85/clear-pdf-local" class="btn btn-secondary">
+          <span>GitHub</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+        </a>
+      </div>
+
+      <!-- Landing Graphic / Key Visual -->
+      <div class="visual-wrapper">
+        <img src="assets/key-visual.png" alt="ClearPDF Local Mockup Visual">
+      </div>
+    </section>
+
+    <!-- Scanner Simulation Section -->
+    <section class="scanner-simulation" id="scanner">
+      <div class="scanner-info">
+        <div class="lang-ko">
+          <h2>카메라 하나로 끝내는<br><span>초고속 오프라인 문서 스캔</span></h2>
+          <p>종이 영수증, 계약서, 신분증을 카메라로 찰칵 찍어 번거로움 없이 그 자리에서 바로 고품질 PDF 문서로 스캔하세요. 지능적인 외곽 크롭과 필터 보정으로 선명함만 남깁니다.</p>
+          <div class="btn btn-secondary" style="pointer-events: none; opacity: 0.9;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            기기 내부에서 100% 안전하게 처리
+          </div>
+        </div>
+        <div class="lang-en">
+          <h2>High-Quality<br><span>On-Device Document Scanning</span></h2>
+          <p>Scan paper receipts, agreements, or ID cards on the fly. Crop, perspective-correct, and filter using local image processing pipelines. Simple, clear, and absolutely private.</p>
+          <div class="btn btn-secondary" style="pointer-events: none; opacity: 0.9;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            100% Private, Device-Only Processing
+          </div>
+        </div>
+      </div>
+      <div class="scanner-display">
+        <div class="scan-beam"></div>
+        <div class="mock-doc">
+          <div class="doc-line"></div>
+          <div class="doc-line"></div>
+          <div class="doc-line"></div>
+          <div class="doc-line">
+            <span class="lang-ko">스캔 중...</span>
+            <span class="lang-en">Scanning...</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-grid" id="features">
+      <div class="feature-card">
+        <div class="feature-icon">📁</div>
+        <div class="lang-ko">
+          <h3>초경량 PDF 뷰어</h3>
+          <p>기기 안의 어떤 PDF 파일이든 로딩 지연 없이 빠르고 쾌적하게 뷰잉을 시작할 수 있습니다. 북마크 추가와 페이지 점프를 완벽하게 보장합니다.</p>
+        </div>
+        <div class="lang-en">
+          <h3>Lightweight Viewer</h3>
+          <p>Open and read any local PDF files in milliseconds. Save bookmarks and jump through pages seamlessly with zero lag.</p>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🧩</div>
+        <div class="lang-ko">
+          <h3>PDF 문서 병합</h3>
+          <p>여러 개의 분산된 PDF 파일을 마크하고, 한 번의 터치로 순서에 따라 정렬하여 깔끔한 단일 파일로 엮어냅니다.</p>
+        </div>
+        <div class="lang-en">
+          <h3>PDF Merger</h3>
+          <p>Select multiple individual PDF documents and compile them chronologically into a single, clean output file.</p>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">✂️</div>
+        <div class="lang-ko">
+          <h3>PDF 문서 분할</h3>
+          <p>두껍고 무거운 대용량 PDF 문서에서 내가 필요한 특정 페이지 범위만 똑 떼어내 별도의 파일로 가볍게 분할합니다.</p>
+        </div>
+        <div class="lang-en">
+          <h3>PDF Splitter</h3>
+          <p>Extract specific page ranges from heavy documents and save them as lightweight, independent files.</p>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <div class="lang-ko">
+          <h3>완벽한 로컬 프라이버시</h3>
+          <p>인터넷 통신 권한(INTERNET) 자체가 애초에 필요 없으므로 해킹이나 개인정보의 외부 유출 가능성이 원천적으로 차단되어 있습니다.</p>
+        </div>
+        <div class="lang-en">
+          <h3>No Internet Required</h3>
+          <p>Designed with absolute privacy in mind. Operates completely without network access, ensuring zero data transmission.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Download / Repository CTA Section -->
+    <section class="download-section" id="download">
+      <div class="lang-ko">
+        <h2>지금 ClearPDF Local을 만나보세요</h2>
+        <p>GitHub 릴리즈 페이지에서 안전하게 빌드된 AAB 설치 파일 및 최신 소스코드를 다운로드하거나, 개발 가이드를 참고하여 직접 로컬에서 빌드해볼 수 있습니다.</p>
+      </div>
+      <div class="lang-en">
+        <h2>Get Started with ClearPDF Local</h2>
+        <p>Download the pre-compiled AAB file or clone the open-source repository directly to compile it on your own machine.</p>
+      </div>
+      
+      <div class="cta-group" style="margin-bottom: 0;">
+        <a href="https://github.com/jeiel85/clear-pdf-local/releases" class="btn btn-primary">
+          <span class="lang-ko">릴리즈 다운로드</span>
+          <span class="lang-en">Go to Releases</span>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/></svg>
+        </a>
+      </div>
+    </section>
+
+  </div>
+
+  <footer>
+    <div class="shell">
+      <div class="footer-links">
+        <a href="privacy.html" class="lang-ko">개인정보 처리방침</a>
+        <a href="privacy.html" class="lang-en">Privacy Policy</a>
+        <a href="https://github.com/jeiel85/clear-pdf-local">GitHub</a>
+      </div>
+      <p>&copy; 2026 ClearPDF Local. Open-Source, Released under MIT License.</p>
+    </div>
+  </footer>
+
+  <script>
+    function toggleLanguage() {
+      const body = document.body;
+      const btn = document.querySelector('.lang-btn');
+      
+      if (body.getAttribute('lang') === 'ko') {
+        body.setAttribute('lang', 'en');
+        btn.textContent = 'KO';
+      } else {
+        body.setAttribute('lang', 'ko');
+        btn.textContent = 'EN';
+      }
+    }
+  </script>
+</body>
+</html>

@@ -1,21 +1,110 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
-</div>
+# ClearPDF Local
 
-# Run and deploy your AI Studio app
+> **인터넷 권한 없는 완벽한 보안, 가장 빠르고 강력한 오프라인 PDF 리더 & 문서 스캐너**
+> 
+> ClearPDF Local은 외부 서버 통신을 차단하고 100% 로컬 환경에서 소중한 문서를 열람, 병합, 분할, 촬영 스캔할 수 있도록 설계된 Android 애플리케이션입니다.
 
-This contains everything you need to run your app locally.
+ClearPDF Local is a secure, local-first, and lightweight offline PDF utility app for Android, built with Kotlin and Jetpack Compose. Read documents, scan paper bills via camera, merge files, and split pages fully on-device with zero network requests.
 
-View your app in AI Studio: https://ai.studio/apps/ef2a5bd2-d92d-4ea2-8ca0-67980ff5fa64
+---
 
-## Run Locally
+<p align="center">
+  <img src="docs/assets/key-visual.png" alt="ClearPDF Local Key Visual" width="700">
+</p>
 
-**Prerequisites:**  [Android Studio](https://developer.android.com/studio)
+---
 
+## 🔒 핵심 가치 & 브랜딩 (Core Values)
 
-1. Open Android Studio
-2. Select **Open** and choose the directory containing this project
-3. Allow Android Studio to fix any incompatibilities as it imports the project.
-4. Create a file named `.env` in the project directory and set `GEMINI_API_KEY` in that file to your Gemini API key (see `.env.example` for an example)
-5. Remove this line from the app's `build.gradle.kts` file: `signingConfig = signingConfigs.getByName("debugConfig")`
-6. Run the app on an emulator or physical device
+- **보안 중심의 로컬 전용 (Purely Local)**: 인터넷 통신 권한 (`android.permission.INTERNET`) 자체를 선언하지 않아, 기기에 보관 중이거나 스캔한 소중한 문서 정보가 기기 외부나 외부 클라우드로 업로드될 가능성을 근본적으로 차단합니다.
+- **고성능 이미지 보정 (Smart Camera Scanner)**: 기기 내장 카메라를 사용해 종이 문서나 영수증을 촬영하면 모서리를 검출하고, 투영 원근 보정 및 선명화 필터를 거쳐 깔끔한 고화질 PDF 파일로 실시간 가공합니다.
+- **다재다능한 문서 도구 (PDF Toolbox)**: 병합 (Merge), 분할 (Split), 이미지 변환 (Image-to-PDF) 등 문서 작업에 꼭 필요한 필수 도구들을 하나의 가볍고 빠른 유틸리티로 담았습니다.
+
+---
+
+## 🛠️ 기술 스택 (Tech Stack)
+
+| 영역 | 선택 기술 |
+|---|---|
+| **언어 (Language)** | Kotlin |
+| **UI 프레임워크** | Jetpack Compose, Material 3 |
+| **아키텍처 (Architecture)** | Clean Architecture / MVVM 패턴 |
+| **로컬 데이터베이스** | Room Database |
+| **비동기 처리** | Kotlin Coroutines & Flow |
+| **이미지 보정 및 뷰어** | Android CameraX API, Android PdfRenderer |
+| **빌드 구성** | Gradle Kotlin DSL + 버전 카탈로그 (`libs.versions.toml`) |
+
+---
+
+## 📦 저장소 구조 (Directory Structure)
+
+```text
+clear-pdf-local/
+  app/
+    src/main/
+      java/com/jeiel85/clearpdflocal/
+        data/         # Room Database, 파일 입출력 및 리포지토리 레이어
+        domain/       # PDF 변환, 병합, 분할 핵심 유스케이스 로직
+        ui/
+          screens/    # 리더, 스캐너, 도구(병합/분할) 등 화면 구성
+          theme/      # Dark Slate & Cyan 디자인 테마
+          viewmodel/  # 상태 제어 및 비즈니스 조율 ViewModel
+      res/            # 다국어 스트링, 벡터 아이콘 및 스타일 리소스
+      AndroidManifest.xml
+  docs/               # GitHub Pages 랜딩 웹페이지 및 그래픽 자산
+  store-graphics/     # Play Store 등록용 이미지 리소스 (512px 아이콘, 배너)
+```
+
+---
+
+## 🚀 빠른 시작 (Quick Start)
+
+### 빌드 및 실행 요구조건
+- **JDK**: 17 이상
+- **Android SDK**: Platform 36
+- **Android Build Tools**: 36.0.0
+- **Android Studio**: Ladybug 이상 권장
+
+### 빌드 및 로컬 테스트 방법
+Windows PowerShell 또는 Linux/macOS 터미널에서 다음 명령어를 실행하여 로컬 빌드 및 통합 테스트를 실행할 수 있습니다.
+
+**Windows PowerShell**:
+```powershell
+# 단위 테스트 및 Robolectric 스크린샷 검증 테스트 수행
+.\gradlew.bat test
+
+# 디버그 개발용 APK 컴파일 및 설치
+.\gradlew.bat assembleDebug
+```
+
+**Linux / macOS**:
+```bash
+./gradlew test
+./gradlew assembleDebug
+```
+
+---
+
+## 🔐 릴리즈 빌드 및 서명 정책 (Release & Signing)
+
+배포용 AAB(Android App Bundle) 파일을 빌드할 때는 보안 서명을 적용해야 합니다. 로컬 디렉토리에 서명 자격증명을 작성하여 안전하게 빌드할 수 있습니다.
+
+1. 프로젝트 루트에 `.keystore` 디렉토리를 생성하고, 서명용 `my-upload-key.jks` 키 파일을 배치합니다.
+2. 프로젝트 루트에 `.env` 파일을 생성하고 아래와 같이 키 정보를 기재합니다.
+```env
+KEYSTORE_PATH=.keystore/my-upload-key.jks
+STORE_PASSWORD=your_password
+KEY_ALIAS=upload
+KEY_PASSWORD=your_password
+```
+3. 다음 Gradle 명령어를 입력하여 빌드 및 데스크톱 내보내기를 동시 수행합니다:
+
+```powershell
+# 배포용 릴리즈 AAB 빌드 및 Desktop/Build 폴더로 즉시 복사 내보내기
+.\gradlew.bat :app:exportReleaseToDesktop
+```
+
+---
+
+## 📄 라이선스 (License)
+본 프로젝트는 **MIT License**에 따라 자유롭게 복제, 배포 및 수정할 수 있습니다.
