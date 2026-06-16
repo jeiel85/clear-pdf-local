@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Base Paper Document Sheet -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,24 L58,24 L74,40 L74,84 C74,86.2 72.2,88 70,88 L38,88 C35.8,88 34,86.2 34,84 Z" />
+    
+    <!-- Paper folded top right corner -->
+    <path
+        android:fillColor="#E2E8F0"
+        android:pathData="M58,24 L74,40 L58,40 Z" />
+
+    <!-- Stylized Document Text Lines -->
+    <path
+        android:fillColor="#94A3B8"
+        android:pathData="M40,46 H68 V48 H40 Z M40,52 H68 V54 H40 Z" />
+
+    <!-- Centered Protection Shield representing Local Offline Privacy Security -->
+    <path
+        android:fillColor="#2563EB"
+        android:pathData="M44,60 C44,60 44,70 54,75 C64,70 64,60 64,60 L54,58 Z" />
+        
+    <!-- Shield Checkmark Inner Accent -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M51.5,66.8 L48,63.3 L49.4,61.9 L51.5,64 L58.6,56.9 L60,58.3 Z" />
+</vector>
