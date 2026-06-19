@@ -17,7 +17,7 @@ ClearPDF Local is a secure, local-first, and lightweight offline PDF utility app
 ## 🔒 핵심 가치 & 브랜딩 (Core Values)
 
 - **보안 중심의 로컬 전용 (Purely Local)**: 인터넷 통신 권한 (`android.permission.INTERNET`) 자체를 선언하지 않아, 기기에 보관 중이거나 스캔한 소중한 문서 정보가 기기 외부나 외부 클라우드로 업로드될 가능성을 근본적으로 차단합니다.
-- **고성능 이미지 보정 (Smart Camera Scanner)**: 기기 내장 카메라를 사용해 종이 문서나 영수증을 촬영하면 모서리를 검출하고, 투영 원근 보정 및 선명화 필터를 거쳐 깔끔한 고화질 PDF 파일로 실시간 가공합니다.
+- **고성능 이미지 보정 (Smart Camera Scanner)**: 기기 내장 카메라로 종이 문서나 영수증을 촬영하면 OpenCV 기반 온디바이스 파이프라인이 문서의 가장자리를 자동 검출하고, 투영 원근 보정으로 비스듬한 사진을 반듯하게 펴며, 그림자·조명 얼룩을 정리합니다. 페이지마다 자동(매직 컬러)·컬러·회색조·흑백 보정 모드를 선택할 수 있습니다.
 - **다재다능한 문서 도구 (PDF Toolbox)**: 병합 (Merge), 분할 (Split), 이미지 변환 (Image-to-PDF) 등 문서 작업에 꼭 필요한 필수 도구들을 하나의 가볍고 빠른 유틸리티로 담았습니다.
 
 ---

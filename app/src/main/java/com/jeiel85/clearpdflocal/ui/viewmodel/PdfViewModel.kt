@@ -1,7 +1,6 @@
 package com.jeiel85.clearpdflocal.ui.viewmodel
 
 import android.app.Application
-import android.graphics.*
 import android.net.Uri
 import android.os.Environment
 import android.util.Log
@@ -16,20 +15,23 @@ import com.jeiel85.clearpdflocal.data.model.Bookmark
 import com.jeiel85.clearpdflocal.data.model.RecentFile
 import com.jeiel85.clearpdflocal.data.repository.BookmarkRepository
 import com.jeiel85.clearpdflocal.data.repository.RecentFileRepository
+import com.jeiel85.clearpdflocal.domain.imaging.BitmapIo
+import com.jeiel85.clearpdflocal.domain.imaging.DocumentDetector
+import com.jeiel85.clearpdflocal.domain.imaging.DocumentScanProcessor
+import com.jeiel85.clearpdflocal.domain.imaging.ScanMode
+import com.jeiel85.clearpdflocal.domain.imaging.ScannedPage
 import com.jeiel85.clearpdflocal.domain.usecase.ImageToPdfUseCase
 import com.jeiel85.clearpdflocal.domain.usecase.MergePdfUseCase
 import com.jeiel85.clearpdflocal.domain.usecase.SplitPdfUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
-import java.io.FileOutputStream
 
 class PdfViewModel(application: Application) : AndroidViewModel(application) {
 
     private val context = application.applicationContext
-    
+
     // Repositories
     private val database = AppDatabase.getDatabase(context)
     private val recentFileRepository = RecentFileRepository(database.recentFileDao())
@@ -69,9 +71,13 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
     private val _selectedImagesForPdf = MutableStateFlow<List<Uri>>(emptyList())
     val selectedImagesForPdf: StateFlow<List<Uri>> = _selectedImagesForPdf.asStateFlow()
 
-    // Scanning screen local state
-    private val _scannedImageFiles = MutableStateFlow<List<File>>(emptyList())
-    val scannedImageFiles: StateFlow<List<File>> = _scannedImageFiles.asStateFlow()
+    // Scanning screen local state — each page keeps its raw photo plus the processed result.
+    private val _scannedPages = MutableStateFlow<List<ScannedPage>>(emptyList())
+    val scannedPages: StateFlow<List<ScannedPage>> = _scannedPages.asStateFlow()
+
+    // True while a capture or mode change is being processed by OpenCV.
+    private val _isProcessingScan = MutableStateFlow(false)
+    val isProcessingScan: StateFlow<Boolean> = _isProcessingScan.asStateFlow()
 
     // Merging screen local state
     private val _selectedPdfsForMerge = MutableStateFlow<List<Uri>>(emptyList())
@@ -100,7 +106,7 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             // Keep permission persistable if SAF URI
             FileAccessManager.takePersistableUriPermission(context, uri)
-            
+
             val name = FileAccessManager.getFileName(context, uri)
             val size = FileAccessManager.getFileSize(context, uri)
             recentFileRepository.insertRecentFile(
@@ -188,7 +194,7 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
                 val cleanName = if (outputName.endsWith(".pdf", ignoreCase = true)) outputName else "$outputName.pdf"
                 val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                 val outputFile = File(downloadsDir, cleanName)
-                
+
                 val result = ImageToPdfUseCase.execute(context, uris, outputFile)
                 if (result.isSuccess) {
                     _operationMessage.emit("PDF generated in Downloads: $cleanName")
@@ -204,111 +210,107 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    // Scanned image operations
-    fun addScannedFile(file: File) {
-        _scannedImageFiles.value = _scannedImageFiles.value + file
-    }
-
-    fun removeScannedFile(index: Int) {
-        val current = _scannedImageFiles.value.toMutableList()
-        if (index in current.indices) {
-            val f = current.removeAt(index)
-            f.delete()
-            _scannedImageFiles.value = current
-        }
-    }
-
-    fun clearScannedFiles() {
-        _scannedImageFiles.value.forEach { it.delete() }
-        _scannedImageFiles.value = emptyList()
-    }
+    // Scanned page operations ----------------------------------------------------------------
 
     /**
-     * Applies filter style to a scanned frame file.
-     * Filter styles: "ORIGINAL", "BLACK_WHITE", "SHARPEN"
+     * Processes a freshly captured photo: detect the document quad, perspective-correct it,
+     * and apply the default [ScanMode.AUTO] enhancement. The raw photo is kept so the user can
+     * switch modes later without re-shooting.
      */
-    fun applyFilterToScannedImage(index: Int, filterStyle: String) {
-        val list = _scannedImageFiles.value
-        if (index !in list.indices) return
-        val targetFile = list[index]
-        
+    fun addCapturedPhoto(rawFile: File) {
         viewModelScope.launch(Dispatchers.IO) {
+            _isProcessingScan.value = true
             try {
-                val originalBitmap = BitmapFactory.decodeFile(targetFile.absolutePath) ?: return@launch
-                
-                val filteredBitmap = when (filterStyle) {
-                    "BLACK_WHITE" -> {
-                        val bmp = Bitmap.createBitmap(originalBitmap.width, originalBitmap.height, Bitmap.Config.ARGB_8888)
-                        val canvas = Canvas(bmp)
-                        val paint = Paint()
-                        val cm = ColorMatrix()
-                        cm.setSaturation(0f) // Saturation 0 is Black and White
-                        
-                        // Increase contrast for document readability
-                        val scale = 1.4f
-                        val translate = -15f
-                        val contrastMatrix = ColorMatrix(floatArrayOf(
-                            scale, 0f, 0f, 0f, translate,
-                            0f, scale, 0f, 0f, translate,
-                            0f, 0f, scale, 0f, translate,
-                            0f, 0f, 0f, 1f, 0f
-                        ))
-                        cm.postConcat(contrastMatrix)
-                        
-                        paint.colorFilter = ColorMatrixColorFilter(cm)
-                        canvas.drawBitmap(originalBitmap, 0f, 0f, paint)
-                        bmp
-                    }
-                    "SHARPEN" -> {
-                        // Enhance brightness and contrast
-                        val bmp = Bitmap.createBitmap(originalBitmap.width, originalBitmap.height, Bitmap.Config.ARGB_8888)
-                        val canvas = Canvas(bmp)
-                        val paint = Paint()
-                        val cm = ColorMatrix(floatArrayOf(
-                            1.2f, 0f, 0f, 0f, 10f,
-                            0f, 1.2f, 0f, 0f, 10f,
-                            0f, 0f, 1.2f, 0f, 10f,
-                            0f, 0f, 0f, 1f, 0f
-                        ))
-                        paint.colorFilter = ColorMatrixColorFilter(cm)
-                        canvas.drawBitmap(originalBitmap, 0f, 0f, paint)
-                        bmp
-                    }
-                    else -> originalBitmap // ORIGINAL (no matrix)
+                val raw = BitmapIo.decodeScaled(rawFile.absolutePath)
+                if (raw == null) {
+                    _operationMessage.emit("Could not read the captured photo.")
+                    return@launch
                 }
+                val corners = DocumentDetector.detectCorners(raw)
+                val processed = DocumentScanProcessor.process(raw, corners, ScanMode.AUTO)
+                raw.recycle()
 
-                FileOutputStream(targetFile).use { out ->
-                    filteredBitmap.compress(Bitmap.CompressFormat.JPEG, 90, out)
-                }
-                
-                originalBitmap.recycle()
-                if (filteredBitmap != originalBitmap) {
-                    filteredBitmap.recycle()
-                }
+                val processedFile = File(context.cacheDir, "scan_proc_${System.currentTimeMillis()}.jpg")
+                BitmapIo.saveJpeg(processed, processedFile)
+                processed.recycle()
 
-                // Force refresh flow by updating the list reference
-                _scannedImageFiles.value = _scannedImageFiles.value.toList()
-                _operationMessage.emit("Filter applied.")
+                _scannedPages.value = _scannedPages.value + ScannedPage(
+                    rawPath = rawFile.absolutePath,
+                    processedPath = processedFile.absolutePath,
+                    mode = ScanMode.AUTO,
+                    corners = corners
+                )
             } catch (e: Exception) {
-                Log.e("PdfViewModel", "Error applying filter", e)
+                Log.e("PdfViewModel", "Scan processing failed", e)
+                _operationMessage.emit("Scan processing failed: ${e.message}")
+            } finally {
+                _isProcessingScan.value = false
             }
         }
     }
 
+    /** Re-applies a different enhancement [mode] to an existing page, reprocessing from raw. */
+    fun applyScanMode(index: Int, mode: ScanMode) {
+        val pages = _scannedPages.value
+        if (index !in pages.indices) return
+        val page = pages[index]
+        viewModelScope.launch(Dispatchers.IO) {
+            _isProcessingScan.value = true
+            try {
+                val raw = BitmapIo.decodeScaled(page.rawPath) ?: return@launch
+                val processed = DocumentScanProcessor.process(raw, page.corners, mode)
+                raw.recycle()
+
+                // Write to a fresh file so Coil reloads instead of serving the cached image.
+                val newProcessed = File(context.cacheDir, "scan_proc_${System.currentTimeMillis()}.jpg")
+                BitmapIo.saveJpeg(processed, newProcessed)
+                processed.recycle()
+                File(page.processedPath).delete()
+
+                _scannedPages.value = _scannedPages.value.toMutableList().also {
+                    it[index] = page.copy(processedPath = newProcessed.absolutePath, mode = mode)
+                }
+                _operationMessage.emit("Applied ${mode.name} mode.")
+            } catch (e: Exception) {
+                Log.e("PdfViewModel", "Mode change failed", e)
+            } finally {
+                _isProcessingScan.value = false
+            }
+        }
+    }
+
+    fun removeScannedPage(index: Int) {
+        val pages = _scannedPages.value.toMutableList()
+        if (index in pages.indices) {
+            val page = pages.removeAt(index)
+            File(page.rawPath).delete()
+            File(page.processedPath).delete()
+            _scannedPages.value = pages
+        }
+    }
+
+    fun clearScannedPages() {
+        _scannedPages.value.forEach {
+            File(it.rawPath).delete()
+            File(it.processedPath).delete()
+        }
+        _scannedPages.value = emptyList()
+    }
+
     fun generatePdfFromScanned(outputName: String, onFinished: (File) -> Unit) {
-        val files = _scannedImageFiles.value
-        if (files.isEmpty()) return
-        val uris = files.map { Uri.fromFile(it) }
+        val pages = _scannedPages.value
+        if (pages.isEmpty()) return
+        val uris = pages.map { Uri.fromFile(File(it.processedPath)) }
         viewModelScope.launch {
             try {
                 val cleanName = if (outputName.endsWith(".pdf", ignoreCase = true)) outputName else "$outputName.pdf"
                 val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                 val outputFile = File(downloadsDir, cleanName)
-                
+
                 val result = ImageToPdfUseCase.execute(context, uris, outputFile)
                 if (result.isSuccess) {
                     _operationMessage.emit("Scan PDF saved: $cleanName")
-                    clearScannedFiles()
+                    clearScannedPages()
                     onFinished(result.getOrThrow())
                 } else {
                     _operationMessage.emit("Scan conversion failed.")
@@ -349,7 +351,7 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
                 val cleanName = if (outputName.endsWith(".pdf", ignoreCase = true)) outputName else "$outputName.pdf"
                 val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                 val outputFile = File(downloadsDir, cleanName)
-                
+
                 val result = MergePdfUseCase.execute(context, uris, outputFile)
                 if (result.isSuccess) {
                     _operationMessage.emit("Merged PDF saved successfully as $cleanName")
@@ -371,7 +373,7 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
                 val cleanName = if (outputName.endsWith(".pdf", ignoreCase = true)) outputName else "$outputName.pdf"
                 val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                 val outputFile = File(downloadsDir, cleanName)
-                
+
                 val result = SplitPdfUseCase.execute(context, pdfUri, pageRange, outputFile)
                 if (result.isSuccess) {
                     _operationMessage.emit("Split PDF saved successfully as $cleanName")

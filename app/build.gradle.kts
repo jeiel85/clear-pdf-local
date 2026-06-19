@@ -113,10 +113,16 @@ android {
     applicationId = "com.jeiel85.clearpdflocal"
     minSdk = 24
     targetSdk = 36
-    versionCode = 2
-    versionName = "1.0.1"
+    versionCode = 3
+    versionName = "1.1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+    // OpenCV ships prebuilt native libs for every ABI. Limit the packaged ABIs to the ones
+    // real phones use so the universal GitHub APK stays lean; the Play AAB still splits per ABI.
+    ndk {
+      abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+    }
   }
 
   signingConfigs {
@@ -224,6 +230,7 @@ dependencies {
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
   implementation(libs.coil.compose)
+  implementation(libs.opencv)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   testImplementation(libs.androidx.compose.ui.test.junit4)

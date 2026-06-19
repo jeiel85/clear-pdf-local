@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
+import com.jeiel85.clearpdflocal.domain.imaging.ScanMode
 import com.jeiel85.clearpdflocal.ui.viewmodel.PdfViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -54,8 +55,9 @@ fun ScanScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Observe local list of scanned items
-    val scannedFiles by viewModel.scannedImageFiles.collectAsState()
+    // Observe local list of scanned pages + processing state
+    val scannedPages by viewModel.scannedPages.collectAsState()
+    val isProcessing by viewModel.isProcessingScan.collectAsState()
 
     // Accompanist check state for camera permissions
     val cameraPermissionState = rememberPermissionState(permission = Manifest.permission.CAMERA)
@@ -84,7 +86,7 @@ fun ScanScreen(
                 title = { Text("Offline Document Scan", fontWeight = FontWeight.Bold, fontSize = 18.sp) },
                 navigationIcon = {
                     IconButton(onClick = {
-                        viewModel.clearScannedFiles()
+                        viewModel.clearScannedPages()
                         onNavigateBack()
                     }) {
                         Icon(imageVector = Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
@@ -157,20 +159,20 @@ fun ScanScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     // Previews of captures row
-                    if (scannedFiles.isNotEmpty()) {
+                    if (scannedPages.isNotEmpty()) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text(
-                                "Scanned Frames (${scannedFiles.size})",
+                                "Scanned Pages (${scannedPages.size})",
                                 color = Color.White,
                                 fontSize = 13.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                "Tap frame to apply B&W/Sharpen filters",
+                                "Tap a page to change scan mode",
                                 color = Color.White.copy(alpha = 0.6f),
                                 fontSize = 11.sp
                             )
@@ -182,7 +184,7 @@ fun ScanScreen(
                                 .fillMaxWidth()
                                 .height(72.dp)
                         ) {
-                            itemsIndexed(scannedFiles) { index, file ->
+                            itemsIndexed(scannedPages) { index, page ->
                                 Box(
                                     modifier = Modifier
                                         .size(64.dp)
@@ -194,7 +196,7 @@ fun ScanScreen(
                                         }
                                 ) {
                                     AsyncImage(
-                                        model = file,
+                                        model = File(page.processedPath),
                                         contentDescription = null,
                                         contentScale = ContentScale.Crop,
                                         modifier = Modifier.fillMaxSize()
@@ -230,14 +232,14 @@ fun ScanScreen(
                         // Dismiss list button
                         IconButton(
                             onClick = {
-                                viewModel.clearScannedFiles()
+                                viewModel.clearScannedPages()
                             },
-                            enabled = scannedFiles.isNotEmpty()
+                            enabled = scannedPages.isNotEmpty()
                         ) {
                             Icon(
                                 imageVector = Icons.Default.DeleteSweep,
                                 contentDescription = "Clear All Scanned",
-                                tint = if (scannedFiles.isNotEmpty()) Color.White else Color.White.copy(alpha = 0.3f),
+                                tint = if (scannedPages.isNotEmpty()) Color.White else Color.White.copy(alpha = 0.3f),
                                 modifier = Modifier.size(24.dp)
                             )
                         }
@@ -257,7 +259,7 @@ fun ScanScreen(
                                         ContextCompat.getMainExecutor(context),
                                         object : ImageCapture.OnImageSavedCallback {
                                             override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                                                viewModel.addScannedFile(tempPhoto)
+                                                viewModel.addCapturedPhoto(tempPhoto)
                                             }
                                             override fun onError(exception: ImageCaptureException) {
                                                 Log.e("ScanScreen", "Fail capture picture", exception)
@@ -280,15 +282,31 @@ fun ScanScreen(
                         // Save Document compiling trigger
                         IconButton(
                             onClick = { showSaveDialog = true },
-                            enabled = scannedFiles.isNotEmpty(),
+                            enabled = scannedPages.isNotEmpty(),
                             modifier = Modifier.testTag("compile_scanned_button")
                         ) {
                             Icon(
                                 imageVector = Icons.Default.CheckBox,
                                 contentDescription = "Save document",
-                                tint = if (scannedFiles.isNotEmpty()) Color.White else Color.White.copy(alpha = 0.3f),
+                                tint = if (scannedPages.isNotEmpty()) Color.White else Color.White.copy(alpha = 0.3f),
                                 modifier = Modifier.size(28.dp)
                             )
+                        }
+                    }
+                }
+
+                // Processing overlay — blocks re-capture while OpenCV crops/enhances the page.
+                if (isProcessing) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.4f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            CircularProgressIndicator(color = Color.White)
+                            Spacer(modifier = Modifier.height(12.dp))
+                            Text("Enhancing scan…", color = Color.White, fontSize = 13.sp)
                         }
                     }
                 }
@@ -343,35 +361,41 @@ fun ScanScreen(
                         color = MaterialTheme.colorScheme.onSurface
                     )
 
+                    Text(
+                        "Scan mode",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    val modes = listOf(
+                        ScanMode.AUTO to "Auto",
+                        ScanMode.COLOR to "Color",
+                        ScanMode.GRAYSCALE to "Gray",
+                        ScanMode.BLACK_WHITE to "B&W"
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Button(
-                            onClick = {
-                                viewModel.applyFilterToScannedImage(idx, "BLACK_WHITE")
-                                showFilterOptionsSheet = false
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("B&W Filter")
-                        }
-
-                        Button(
-                            onClick = {
-                                viewModel.applyFilterToScannedImage(idx, "SHARPEN")
-                                showFilterOptionsSheet = false
-                            },
-                            modifier = Modifier.weight(1f)
-                        ) {
-                            Text("Sharpen")
+                        modes.forEach { (mode, label) ->
+                            Button(
+                                onClick = {
+                                    viewModel.applyScanMode(idx, mode)
+                                    showFilterOptionsSheet = false
+                                },
+                                contentPadding = PaddingValues(horizontal = 4.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text(label, fontSize = 13.sp)
+                            }
                         }
                     }
 
                     // Delete current frame
                     Button(
                         onClick = {
-                            viewModel.removeScannedFile(idx)
+                            viewModel.removeScannedPage(idx)
                             showFilterOptionsSheet = false
                         },
                         colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
@@ -412,7 +436,7 @@ fun ScanScreen(
                             viewModel.generatePdfFromScanned(documentNameInput) { _ ->
                                 showSaveDialog = false
                                 isCompiling = false
-                                viewModel.clearScannedFiles()
+                                viewModel.clearScannedPages()
                                 onNavigateBack()
                             }
                         },

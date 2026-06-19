@@ -1,17 +1,15 @@
 <ko-KR>
-ClearPDF Local v1.0.1 첫 릴리즈입니다.
-- 앱 패키지명과 브랜딩을 com.jeiel85.clearpdflocal로 신규 리브랜딩했습니다.
-- AI Studio 기본 템플릿 코드 및 MyApplication 임시 흔적을 청소하고 제거했습니다.
-- 외부 서버 유출 없이 기기 내부에서 작동하는 안전한 오프라인 PDF 리더 뷰어 기능을 지원합니다.
-- 모바일 카메라를 활용한 문서 촬영 스캔 및 원근 보정/필터 크롭 기능을 탑재했습니다.
-- 여러 PDF를 하나로 합치거나(Merge) 원하는 페이지만 떼어내는 분할(Split) 기능 및 이미지-PDF 변환 도구를 탑재했습니다.
+ClearPDF Local v1.1.0 — 문서 스캔이 한 단계 좋아졌습니다.
+- 카메라로 문서를 찍으면 가장자리를 자동으로 찾아, 비스듬히 찍은 사진도 반듯한 문서로 펴줍니다.
+- 그림자와 고르지 않은 조명을 정리해 더 깨끗하고 또렷한 스캔을 만듭니다.
+- 페이지마다 자동·컬러·회색조·흑백 모드를 골라 적용할 수 있습니다.
+- 모든 처리는 인터넷 없이 기기 안에서만 이뤄져, 문서가 밖으로 나가지 않습니다.
 </ko-KR>
 
 <en-US>
-Initial release of ClearPDF Local v1.0.1.
-- Rebranded app package name and application ID to com.jeiel85.clearpdflocal.
-- Cleaned up AI Studio default templates and MyApplication placeholder code.
-- Supports secure local-first offline PDF reader/viewer without server uploads.
-- Offers on-device camera scanner with perspective correction and crop filters.
-- Features document tools including PDF merger, page splitter, and image-to-PDF converter.
+ClearPDF Local v1.1.0 — a big step up for document scanning.
+- Photograph a document and its edges are found automatically, straightening angled shots into flat, square pages.
+- Shadows and uneven lighting are cleaned up for a crisper, clearer scan.
+- Choose Auto, Color, Grayscale, or B&W for each page.
+- Everything runs on-device with no internet, so your documents never leave the phone.
 </en-US>
