@@ -1,3 +1,4 @@
+import com.android.build.api.artifact.SingleArtifact
 import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
 import org.gradle.api.file.RegularFileProperty
@@ -67,6 +68,32 @@ abstract class ExportReleaseToDesktopTask : DefaultTask() {
 
     logger.lifecycle("Wrote ${aabTarget.absolutePath} (${aabTarget.length()} bytes)")
     logger.lifecycle("Wrote ${txtTarget.absolutePath} (${txtTarget.length()} bytes)")
+  }
+}
+
+// Brand-defense gate. ClearPDF Local's core promise is that documents physically cannot
+// leave the device, enforced by NEVER declaring android.permission.INTERNET. A future
+// dependency (ML Kit, Play Services, an analytics/crash SDK) could pull INTERNET in
+// transitively without anyone noticing. This task inspects the merged manifest and fails
+// the build if INTERNET ever appears, so the offline brand is protected by the build, not
+// by code review.
+abstract class CheckNoInternetPermissionTask : DefaultTask() {
+  @get:InputFile
+  abstract val mergedManifest: RegularFileProperty
+
+  @TaskAction
+  fun check() {
+    val manifest = mergedManifest.get().asFile
+    if (manifest.readText().contains("android.permission.INTERNET")) {
+      throw GradleException(
+        "BRAND VIOLATION: android.permission.INTERNET was found in the merged manifest " +
+          "(${manifest.absolutePath}).\n" +
+          "ClearPDF Local must stay provably offline and never declares INTERNET. A dependency " +
+          "most likely pulled it in transitively (e.g. ML Kit, Play Services, analytics/crash SDK). " +
+          "Find and remove it before building."
+      )
+    }
+    logger.lifecycle("✓ No INTERNET permission in the merged manifest — offline brand intact.")
   }
 }
 
@@ -155,11 +182,27 @@ tasks.register<ExportReleaseToDesktopTask>("exportReleaseToDesktop") {
   releaseNotesFile.set(exportReleaseNotes)
 }
 
+// Wire the no-INTERNET gate into every variant's assemble/bundle so no APK or AAB can be
+// produced with an INTERNET permission. Consuming SingleArtifact.MERGED_MANIFEST makes AGP
+// run manifest merging first automatically.
+androidComponents {
+  onVariants { variant ->
+    val capName = variant.name.replaceFirstChar { it.uppercase() }
+    val checkTask = tasks.register<CheckNoInternetPermissionTask>("check${capName}NoInternetPermission") {
+      group = "verification"
+      description = "Fails the build if INTERNET permission is in the merged manifest ($capName)."
+      mergedManifest.set(variant.artifacts.get(SingleArtifact.MERGED_MANIFEST))
+    }
+    listOf("assemble$capName", "bundle$capName").forEach { taskName ->
+      tasks.matching { it.name == taskName }.configureEach { dependsOn(checkTask) }
+    }
+  }
+}
+
 // Some unused dependencies are commented out below instead of being removed.
 // This makes it easy to add them back in the future if needed.
 dependencies {
   implementation(platform(libs.androidx.compose.bom))
-  implementation(platform(libs.firebase.bom))
   implementation(libs.accompanist.permissions)
   implementation(libs.androidx.activity.compose)
   implementation(libs.androidx.camera.camera2)
@@ -181,15 +224,8 @@ dependencies {
   implementation(libs.androidx.room.ktx)
   implementation(libs.androidx.room.runtime)
   implementation(libs.coil.compose)
-  implementation(libs.converter.moshi)
-  // implementation(libs.firebase.ai)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
-  implementation(libs.logging.interceptor)
-  implementation(libs.moshi.kotlin)
-  implementation(libs.okhttp)
-  // implementation(libs.play.services.location)
-  implementation(libs.retrofit)
   testImplementation(libs.androidx.compose.ui.test.junit4)
   testImplementation(libs.androidx.core)
   testImplementation(libs.androidx.junit)
@@ -207,5 +243,4 @@ dependencies {
   debugImplementation(libs.androidx.compose.ui.test.manifest)
   debugImplementation(libs.androidx.compose.ui.tooling)
   "ksp"(libs.androidx.room.compiler)
-  "ksp"(libs.moshi.kotlin.codegen)
 }
