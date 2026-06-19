@@ -1,0 +1,15 @@
+# Force the Gradle wrapper and shell scripts to LF so the Linux CI runner never
+# chokes on CRLF (this repo is developed on Windows). The ancient Unix gradlew /
+# CRLF endings already broke CI once — keep these normalized.
+gradlew text eol=lf
+*.sh text eol=lf
+
+# Binary assets — never line-ending-normalize.
+gradle/wrapper/gradle-wrapper.jar binary
+*.jar binary
+*.apk binary
+*.aab binary
+*.jks binary
+*.keystore binary
+*.png binary
+*.traineddata binary
