@@ -77,6 +77,7 @@ fun ScanScreen(
     var showSaveDialog by remember { mutableStateOf(false) }
     var documentNameInput by remember { mutableStateOf("Scanned_Doc_${SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())}") }
     var isCompiling by remember { mutableStateOf(false) }
+    var makeSearchable by remember { mutableStateOf(false) }
 
     // Filter focus popup state
     var selectedThumbnailIdx by remember { mutableStateOf<Int?>(null) }
@@ -525,13 +526,29 @@ fun ScanScreen(
                                 .fillMaxWidth()
                                 .testTag("scan_save_name_input")
                         )
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { makeSearchable = !makeSearchable }
+                        ) {
+                            Checkbox(checked = makeSearchable, onCheckedChange = { makeSearchable = it })
+                            Column {
+                                Text("Searchable PDF (OCR)", fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                Text(
+                                    "Recognize text on-device so the PDF is searchable. Slower.",
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 },
                 confirmButton = {
                     Button(
                         onClick = {
                             isCompiling = true
-                            viewModel.generatePdfFromScanned(documentNameInput) { _ ->
+                            viewModel.generatePdfFromScanned(documentNameInput, makeSearchable) { _ ->
                                 showSaveDialog = false
                                 isCompiling = false
                                 viewModel.clearScannedPages()

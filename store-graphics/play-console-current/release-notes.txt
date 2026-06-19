@@ -1,15 +1,15 @@
 <ko-KR>
-ClearPDF Local v1.2.0 — 이제 자동으로 찍힙니다.
-- 자동 스캔: 카메라를 문서 위에 가만히 들고 있으면 가장자리를 인식해 알아서 촬영합니다. 책을 넘기면 다음 장이 연달아 스캔됩니다.
-- 인식된 문서 테두리가 화면에 실시간으로 표시됩니다.
-- 자동/수동은 상단 버튼으로 바로 전환할 수 있습니다.
-- 모든 처리는 인터넷 없이 기기 안에서만 이뤄집니다.
+ClearPDF Local v1.3.0 — 검색 가능한 PDF (글자 인식)
+- 스캔 저장 시 '검색 가능 PDF(OCR)'를 켜면 기기에서 글자를 인식해, PDF 안에서 검색·선택·복사가 됩니다.
+- 한국어와 영어를 함께 인식합니다.
+- 글자 인식도 전부 인터넷 없이 기기 안에서만 처리됩니다 — 문서는 밖으로 나가지 않습니다.
+- 인식이 어려운 페이지는 자동으로 일반 PDF로 저장되어 저장이 실패하지 않습니다.
 </ko-KR>
 
 <en-US>
-ClearPDF Local v1.2.0 — it captures on its own now.
-- Auto-scan: hold the camera steady over a page and it detects the edges and shoots automatically. Flip through a book to scan page after page.
-- The detected document border is shown live on screen.
-- Switch between auto and manual with one tap at the top.
-- Everything runs on-device with no internet.
+ClearPDF Local v1.3.0 — searchable PDFs (text recognition)
+- Turn on "Searchable PDF (OCR)" when saving a scan to recognize the text, so the PDF is searchable, selectable, and copyable.
+- Recognizes Korean and English together.
+- Text recognition runs fully on-device with no internet — your documents never leave the phone.
+- Pages that can't be recognized fall back to a normal PDF, so saving never fails.
 </en-US>

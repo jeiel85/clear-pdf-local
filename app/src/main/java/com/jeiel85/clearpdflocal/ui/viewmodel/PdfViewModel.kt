@@ -22,6 +22,7 @@ import com.jeiel85.clearpdflocal.domain.imaging.ScanMode
 import com.jeiel85.clearpdflocal.domain.imaging.ScannedPage
 import com.jeiel85.clearpdflocal.domain.usecase.ImageToPdfUseCase
 import com.jeiel85.clearpdflocal.domain.usecase.MergePdfUseCase
+import com.jeiel85.clearpdflocal.domain.usecase.SearchablePdfUseCase
 import com.jeiel85.clearpdflocal.domain.usecase.SplitPdfUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -297,19 +298,35 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
         _scannedPages.value = emptyList()
     }
 
-    fun generatePdfFromScanned(outputName: String, onFinished: (File) -> Unit) {
+    /**
+     * Compiles the scanned pages into a PDF. When [searchable] is true, runs on-device OCR and
+     * adds an invisible text layer; if that fails it falls back to a plain image PDF so the
+     * user always gets a file.
+     */
+    fun generatePdfFromScanned(outputName: String, searchable: Boolean, onFinished: (File) -> Unit) {
         val pages = _scannedPages.value
         if (pages.isEmpty()) return
-        val uris = pages.map { Uri.fromFile(File(it.processedPath)) }
+        val paths = pages.map { it.processedPath }
         viewModelScope.launch {
             try {
                 val cleanName = if (outputName.endsWith(".pdf", ignoreCase = true)) outputName else "$outputName.pdf"
                 val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
                 val outputFile = File(downloadsDir, cleanName)
 
-                val result = ImageToPdfUseCase.execute(context, uris, outputFile)
+                var result = if (searchable) {
+                    SearchablePdfUseCase.execute(context, paths, outputFile)
+                } else {
+                    ImageToPdfUseCase.execute(context, paths.map { Uri.fromFile(File(it)) }, outputFile)
+                }
+                // Graceful fallback: never let OCR trouble cost the user their scan.
+                if (searchable && result.isFailure) {
+                    result = ImageToPdfUseCase.execute(context, paths.map { Uri.fromFile(File(it)) }, outputFile)
+                }
+
                 if (result.isSuccess) {
-                    _operationMessage.emit("Scan PDF saved: $cleanName")
+                    _operationMessage.emit(
+                        if (searchable) "Searchable scan PDF saved: $cleanName" else "Scan PDF saved: $cleanName"
+                    )
                     clearScannedPages()
                     onFinished(result.getOrThrow())
                 } else {

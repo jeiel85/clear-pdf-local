@@ -12,4 +12,6 @@ gradle/wrapper/gradle-wrapper.jar binary
 *.jks binary
 *.keystore binary
 *.png binary
+*.ttf binary
+*.otf binary
 *.traineddata binary
