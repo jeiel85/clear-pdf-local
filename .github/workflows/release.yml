@@ -49,7 +49,9 @@ jobs:
           KEYSTORE_PATH: ${{ runner.temp }}/keystore/upload.jks
           STORE_PASSWORD: ${{ secrets.UPLOAD_STORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
-        run: ./gradlew :app:assembleRelease --no-daemon --stacktrace
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:assembleRelease --no-daemon --stacktrace
 
       - name: Stage APK with a versioned name
         id: stage
