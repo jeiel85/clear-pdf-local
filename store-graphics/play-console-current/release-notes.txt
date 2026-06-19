@@ -1,15 +1,15 @@
 <ko-KR>
-ClearPDF Local v1.1.0 — 문서 스캔이 한 단계 좋아졌습니다.
-- 카메라로 문서를 찍으면 가장자리를 자동으로 찾아, 비스듬히 찍은 사진도 반듯한 문서로 펴줍니다.
-- 그림자와 고르지 않은 조명을 정리해 더 깨끗하고 또렷한 스캔을 만듭니다.
-- 페이지마다 자동·컬러·회색조·흑백 모드를 골라 적용할 수 있습니다.
-- 모든 처리는 인터넷 없이 기기 안에서만 이뤄져, 문서가 밖으로 나가지 않습니다.
+ClearPDF Local v1.2.0 — 이제 자동으로 찍힙니다.
+- 자동 스캔: 카메라를 문서 위에 가만히 들고 있으면 가장자리를 인식해 알아서 촬영합니다. 책을 넘기면 다음 장이 연달아 스캔됩니다.
+- 인식된 문서 테두리가 화면에 실시간으로 표시됩니다.
+- 자동/수동은 상단 버튼으로 바로 전환할 수 있습니다.
+- 모든 처리는 인터넷 없이 기기 안에서만 이뤄집니다.
 </ko-KR>
 
 <en-US>
-ClearPDF Local v1.1.0 — a big step up for document scanning.
-- Photograph a document and its edges are found automatically, straightening angled shots into flat, square pages.
-- Shadows and uneven lighting are cleaned up for a crisper, clearer scan.
-- Choose Auto, Color, Grayscale, or B&W for each page.
-- Everything runs on-device with no internet, so your documents never leave the phone.
+ClearPDF Local v1.2.0 — it captures on its own now.
+- Auto-scan: hold the camera steady over a page and it detects the edges and shoots automatically. Flip through a book to scan page after page.
+- The detected document border is shown live on screen.
+- Switch between auto and manual with one tap at the top.
+- Everything runs on-device with no internet.
 </en-US>

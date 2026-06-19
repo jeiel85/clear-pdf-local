@@ -1,15 +1,17 @@
 package com.jeiel85.clearpdflocal.ui.screens
 
 import android.Manifest
-import android.content.Context
+import android.graphics.PointF
+import android.os.SystemClock
 import android.util.Log
 import android.view.ViewGroup
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.animation.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -26,7 +28,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -37,6 +42,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import coil.compose.AsyncImage
+import com.jeiel85.clearpdflocal.domain.imaging.DocumentFrameAnalyzer
 import com.jeiel85.clearpdflocal.domain.imaging.ScanMode
 import com.jeiel85.clearpdflocal.ui.viewmodel.PdfViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -45,6 +51,8 @@ import com.google.accompanist.permissions.rememberPermissionState
 import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
+import java.util.concurrent.Executors
+import kotlin.math.max
 
 @OptIn(ExperimentalPermissionsApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -74,11 +82,69 @@ fun ScanScreen(
     var selectedThumbnailIdx by remember { mutableStateOf<Int?>(null) }
     var showFilterOptionsSheet by remember { mutableStateOf(false) }
 
+    // Live document detection / auto-capture wiring
+    val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
+    var liveResult by remember { mutableStateOf<DocumentFrameAnalyzer.DetectionResult?>(null) }
+    var autoCaptureTick by remember { mutableIntStateOf(0) }
+    var autoScanEnabled by remember { mutableStateOf(true) }
+    var lastCaptureAt by remember { mutableLongStateOf(0L) }
+    val analyzer = remember {
+        DocumentFrameAnalyzer { result ->
+            liveResult = result
+            if (result.autoCapture) autoCaptureTick++
+        }
+    }
+    val imageAnalysis = remember {
+        ImageAnalysis.Builder()
+            .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+            .build()
+            .also { it.setAnalyzer(analysisExecutor, analyzer) }
+    }
+
+    // Shared capture path used by both the shutter and auto-capture.
+    val capturePhoto: () -> Unit = {
+        val tempPhoto = File(context.cacheDir, "scan_${System.currentTimeMillis()}.jpg")
+        val outputOptions = ImageCapture.OutputFileOptions.Builder(tempPhoto).build()
+        imageCapture.takePicture(
+            outputOptions,
+            ContextCompat.getMainExecutor(context),
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                    viewModel.addCapturedPhoto(tempPhoto)
+                }
+
+                override fun onError(exception: ImageCaptureException) {
+                    Log.e("ScanScreen", "Fail capture picture", exception)
+                }
+            }
+        )
+    }
+
+    // Fire auto-capture when the analyzer reports a stable page (debounced).
+    LaunchedEffect(autoCaptureTick) {
+        if (autoCaptureTick > 0 && autoScanEnabled && !isProcessing) {
+            val now = SystemClock.elapsedRealtime()
+            if (now - lastCaptureAt > AUTO_CAPTURE_COOLDOWN_MS) {
+                lastCaptureAt = now
+                capturePhoto()
+            }
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            imageAnalysis.clearAnalyzer()
+            analysisExecutor.shutdown()
+        }
+    }
+
     LaunchedEffect(cameraPermissionState.status.isGranted) {
         if (!cameraPermissionState.status.isGranted) {
             cameraPermissionState.launchPermissionRequest()
         }
     }
+
+    val overlayColor = MaterialTheme.colorScheme.primary
 
     Scaffold(
         topBar = {
@@ -129,7 +195,8 @@ fun ScanScreen(
                                     lifecycleOwner,
                                     CameraSelector.DEFAULT_BACK_CAMERA,
                                     previewUseCase,
-                                    imageCapture
+                                    imageCapture,
+                                    imageAnalysis
                                 )
                             } catch (e: Exception) {
                                 Log.e("ScanScreen", "CameraX Binding failed", e)
@@ -140,13 +207,60 @@ fun ScanScreen(
                     }
                 )
 
-                // Layout framing grid mockup overlay
-                Box(
+                // Live document-edge overlay (auto-scan). Falls back to a static guide frame
+                // when auto-scan is off or nothing is detected yet.
+                val res = liveResult
+                if (autoScanEnabled && res?.corners != null && res.srcWidth > 0 && res.srcHeight > 0) {
+                    val corners = res.corners!!
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val mapped = mapCornersToCanvas(corners, res.srcWidth, res.srcHeight, size.width, size.height)
+                        val path = Path().apply {
+                            moveTo(mapped[0].x, mapped[0].y)
+                            for (i in 1 until mapped.size) lineTo(mapped[i].x, mapped[i].y)
+                            close()
+                        }
+                        drawPath(path, color = overlayColor, style = Stroke(width = 4.dp.toPx()))
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(32.dp)
+                            .border(1.dp, Color.White.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+                    )
+                }
+
+                // Auto-scan toggle + hint, pinned to the top of the viewport.
+                Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(32.dp)
-                        .border(1.dp, Color.White.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
-                )
+                        .align(Alignment.TopCenter)
+                        .padding(top = 12.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    FilterChip(
+                        selected = autoScanEnabled,
+                        onClick = { autoScanEnabled = !autoScanEnabled },
+                        label = { Text(if (autoScanEnabled) "Auto-scan ON" else "Auto-scan OFF") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.CenterFocusStrong,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                    )
+                    if (autoScanEnabled) {
+                        Text(
+                            "Hold steady over a page — it captures automatically. Flip for the next.",
+                            color = Color.White.copy(alpha = 0.75f),
+                            fontSize = 11.sp,
+                            modifier = Modifier
+                                .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 8.dp, vertical = 3.dp)
+                        )
+                    }
+                }
 
                 // Bottom operations tray panel
                 Column(
@@ -244,29 +358,13 @@ fun ScanScreen(
                             )
                         }
 
-                        // Big main camera shuttle button
+                        // Big main camera shuttle button (manual capture, always available)
                         Box(
                             modifier = Modifier
                                 .size(76.dp)
                                 .clip(CircleShape)
                                 .background(Color.White)
-                                .clickable {
-                                    val tempPhoto = File(context.cacheDir, "scan_${System.currentTimeMillis()}.jpg")
-                                    val outputOptions = ImageCapture.OutputFileOptions.Builder(tempPhoto).build()
-                                    
-                                    imageCapture.takePicture(
-                                        outputOptions,
-                                        ContextCompat.getMainExecutor(context),
-                                        object : ImageCapture.OnImageSavedCallback {
-                                            override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                                                viewModel.addCapturedPhoto(tempPhoto)
-                                            }
-                                            override fun onError(exception: ImageCaptureException) {
-                                                Log.e("ScanScreen", "Fail capture picture", exception)
-                                            }
-                                        }
-                                    )
-                                }
+                                .clickable { capturePhoto() }
                                 .testTag("camera_shutter_button"),
                             contentAlignment = Alignment.Center
                         ) {
@@ -458,3 +556,22 @@ fun ScanScreen(
         }
     }
 }
+
+/** Maps normalized (0..1) upright corners to canvas pixels using the same FILL_CENTER
+ *  cover-scaling the camera preview applies, so the overlay lines up with what's on screen. */
+private fun mapCornersToCanvas(
+    corners: List<PointF>,
+    srcWidth: Int,
+    srcHeight: Int,
+    canvasWidth: Float,
+    canvasHeight: Float
+): List<Offset> {
+    val scale = max(canvasWidth / srcWidth, canvasHeight / srcHeight)
+    val dispW = srcWidth * scale
+    val dispH = srcHeight * scale
+    val offX = (canvasWidth - dispW) / 2f
+    val offY = (canvasHeight - dispH) / 2f
+    return corners.map { Offset(offX + it.x * dispW, offY + it.y * dispH) }
+}
+
+private const val AUTO_CAPTURE_COOLDOWN_MS = 1200L
