@@ -219,7 +219,7 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
      * and apply the default [ScanMode.AUTO] enhancement. The raw photo is kept so the user can
      * switch modes later without re-shooting.
      */
-    fun addCapturedPhoto(rawFile: File) {
+    fun addCapturedPhoto(rawFile: File, autoFlatten: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
             _isProcessingScan.value = true
             try {
@@ -228,20 +228,41 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
                     _operationMessage.emit("Could not read the captured photo.")
                     return@launch
                 }
-                val corners = DocumentDetector.detectCorners(raw)
-                val processed = DocumentScanProcessor.process(raw, corners, ScanMode.AUTO)
+
+                // Auto-flatten: run the neural dewarp at capture time so flipping a book leaves
+                // a stack of already-flattened pages (falls back to the standard pipeline if it fails).
+                val flat = if (autoFlatten) DewarpEngine.dewarp(context, raw) else null
+                val page: ScannedPage
+                if (flat != null) {
+                    val dewarpFile = File(context.cacheDir, "scan_flat_${System.currentTimeMillis()}.jpg")
+                    BitmapIo.saveJpeg(flat, dewarpFile)
+                    val enhanced = DocumentScanProcessor.enhanceOnly(flat, ScanMode.AUTO)
+                    flat.recycle()
+                    val processedFile = File(context.cacheDir, "scan_proc_${System.currentTimeMillis()}.jpg")
+                    BitmapIo.saveJpeg(enhanced, processedFile)
+                    enhanced.recycle()
+                    page = ScannedPage(
+                        rawPath = rawFile.absolutePath,
+                        processedPath = processedFile.absolutePath,
+                        mode = ScanMode.AUTO,
+                        dewarped = true,
+                        dewarpedPath = dewarpFile.absolutePath
+                    )
+                } else {
+                    val corners = DocumentDetector.detectCorners(raw)
+                    val processed = DocumentScanProcessor.process(raw, corners, ScanMode.AUTO)
+                    val processedFile = File(context.cacheDir, "scan_proc_${System.currentTimeMillis()}.jpg")
+                    BitmapIo.saveJpeg(processed, processedFile)
+                    processed.recycle()
+                    page = ScannedPage(
+                        rawPath = rawFile.absolutePath,
+                        processedPath = processedFile.absolutePath,
+                        mode = ScanMode.AUTO,
+                        corners = corners
+                    )
+                }
                 raw.recycle()
-
-                val processedFile = File(context.cacheDir, "scan_proc_${System.currentTimeMillis()}.jpg")
-                BitmapIo.saveJpeg(processed, processedFile)
-                processed.recycle()
-
-                _scannedPages.value = _scannedPages.value + ScannedPage(
-                    rawPath = rawFile.absolutePath,
-                    processedPath = processedFile.absolutePath,
-                    mode = ScanMode.AUTO,
-                    corners = corners
-                )
+                _scannedPages.value = _scannedPages.value + page
             } catch (e: Exception) {
                 Log.e("PdfViewModel", "Scan processing failed", e)
                 _operationMessage.emit("Scan processing failed: ${e.message}")

@@ -88,6 +88,7 @@ fun ScanScreen(
     var liveResult by remember { mutableStateOf<DocumentFrameAnalyzer.DetectionResult?>(null) }
     var autoCaptureTick by remember { mutableIntStateOf(0) }
     var autoScanEnabled by remember { mutableStateOf(true) }
+    var autoFlattenEnabled by remember { mutableStateOf(false) }
     var lastCaptureAt by remember { mutableLongStateOf(0L) }
     val analyzer = remember {
         DocumentFrameAnalyzer { result ->
@@ -111,7 +112,7 @@ fun ScanScreen(
             ContextCompat.getMainExecutor(context),
             object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                    viewModel.addCapturedPhoto(tempPhoto)
+                    viewModel.addCapturedPhoto(tempPhoto, autoFlattenEnabled)
                 }
 
                 override fun onError(exception: ImageCaptureException) {
@@ -231,7 +232,7 @@ fun ScanScreen(
                     )
                 }
 
-                // Auto-scan toggle + hint, pinned to the top of the viewport.
+                // Auto-scan / Auto-flatten toggles + contextual hint, pinned to the top.
                 Column(
                     modifier = Modifier
                         .align(Alignment.TopCenter)
@@ -239,21 +240,34 @@ fun ScanScreen(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    FilterChip(
-                        selected = autoScanEnabled,
-                        onClick = { autoScanEnabled = !autoScanEnabled },
-                        label = { Text(if (autoScanEnabled) "Auto-scan ON" else "Auto-scan OFF") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.CenterFocusStrong,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    )
-                    if (autoScanEnabled) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        FilterChip(
+                            selected = autoScanEnabled,
+                            onClick = { autoScanEnabled = !autoScanEnabled },
+                            label = { Text(if (autoScanEnabled) "Auto-scan ON" else "Auto-scan OFF") },
+                            leadingIcon = {
+                                Icon(Icons.Default.CenterFocusStrong, contentDescription = null, modifier = Modifier.size(18.dp))
+                            }
+                        )
+                        FilterChip(
+                            selected = autoFlattenEnabled,
+                            onClick = { autoFlattenEnabled = !autoFlattenEnabled },
+                            label = { Text(if (autoFlattenEnabled) "Auto-flatten ON" else "Auto-flatten OFF") },
+                            leadingIcon = {
+                                Icon(Icons.Default.AutoFixHigh, contentDescription = null, modifier = Modifier.size(18.dp))
+                            }
+                        )
+                    }
+                    val hint = when {
+                        autoFlattenEnabled && autoScanEnabled ->
+                            "Flip through a book — each page is captured and flattened automatically."
+                        autoFlattenEnabled -> "Curved pages are flattened automatically when you capture."
+                        autoScanEnabled -> "Hold steady over a page — it captures automatically. Flip for the next."
+                        else -> null
+                    }
+                    if (hint != null) {
                         Text(
-                            "Hold steady over a page — it captures automatically. Flip for the next.",
+                            hint,
                             color = Color.White.copy(alpha = 0.75f),
                             fontSize = 11.sp,
                             modifier = Modifier

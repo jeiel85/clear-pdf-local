@@ -1,15 +1,13 @@
 <ko-KR>
-ClearPDF Local v1.4.0 — 휜 책도 펴서 스캔 (AI 곡면 보정)
-- 펼친 책처럼 휘어진 페이지를 찍었을 때, 스캔한 페이지를 탭하면 나오는 메뉴에서 'Flatten'을 누르면 반듯하게 펴줍니다.
-- 굽은 글줄과 책등 곡률을 평평한 문서로 보정해, 글자 인식(OCR)도 더 깔끔해집니다.
-- 이 보정도 전부 인터넷 없이 기기 안에서만 처리됩니다.
-- 기기에서 빠르게 동작합니다.
+ClearPDF Local v1.5.0 — 넘기기만 하면 펴진 스캔이 쌓입니다
+- '자동 펴기(Auto-flatten)' 토글을 켜면, 자동 스캔으로 찍히는 페이지가 그 즉시 자동으로 펴집니다.
+- 책을 넘기기만 하면 휜 페이지가 알아서 촬영·평면화되어 차곡차곡 쌓입니다 — 셔터도, 페이지별 보정도 따로 누를 필요가 없습니다.
+- 이 모든 처리는 인터넷 없이 기기 안에서만 이뤄집니다.
 </ko-KR>
 
 <en-US>
-ClearPDF Local v1.4.0 — flatten curved book pages (AI dewarping)
-- Photograph a curved, open book, then tap the scanned page and choose "Flatten" to straighten the bent page into a flat document.
-- Curved text lines and a bowed spine are corrected to a flat page, which also makes text recognition (OCR) cleaner.
-- This correction runs fully on-device with no internet.
-- Fast on-device processing.
+ClearPDF Local v1.5.0 — just flip pages and flattened scans stack up
+- Turn on the new "Auto-flatten" toggle and every auto-scanned page is flattened the moment it's captured.
+- Flip through a book and curved pages are captured and straightened on their own — no shutter taps, no per-page correction.
+- All of it runs on-device with no internet.
 </en-US>
