@@ -113,15 +113,17 @@ android {
     applicationId = "com.jeiel85.clearpdflocal"
     minSdk = 24
     targetSdk = 36
-    versionCode = 7
-    versionName = "1.5.0"
+    versionCode = 8
+    versionName = "1.6.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-    // OpenCV ships prebuilt native libs for every ABI. Limit the packaged ABIs to the ones
-    // real phones use so the universal GitHub APK stays lean; the Play AAB still splits per ABI.
+    // Ship arm64 only. OpenCV + ONNX Runtime + Tesseract each bundle native libs per ABI, so
+    // dropping the legacy 32-bit armeabi-v7a copies cuts tens of MB off the universal APK. By
+    // 2026 essentially all Android devices are arm64, and a 31 MB on-device ML model targets
+    // capable hardware anyway.
     ndk {
-      abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+      abiFilters += listOf("arm64-v8a")
     }
   }
 

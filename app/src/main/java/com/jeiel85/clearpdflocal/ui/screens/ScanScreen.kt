@@ -525,6 +525,25 @@ fun ScanScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
+                    // Best-effort finger removal
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.applyFingerRemoval(idx)
+                            showFilterOptionsSheet = false
+                        },
+                        enabled = !isProcessing,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(imageVector = Icons.Default.BackHand, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Remove finger")
+                    }
+                    Text(
+                        "Best-effort — erases a finger holding the page edge (can't restore text it covered).",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
                     // Delete current frame
                     Button(
                         onClick = {

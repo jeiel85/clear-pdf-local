@@ -1,13 +1,13 @@
 <ko-KR>
-ClearPDF Local v1.5.0 — 넘기기만 하면 펴진 스캔이 쌓입니다
-- '자동 펴기(Auto-flatten)' 토글을 켜면, 자동 스캔으로 찍히는 페이지가 그 즉시 자동으로 펴집니다.
-- 책을 넘기기만 하면 휜 페이지가 알아서 촬영·평면화되어 차곡차곡 쌓입니다 — 셔터도, 페이지별 보정도 따로 누를 필요가 없습니다.
-- 이 모든 처리는 인터넷 없이 기기 안에서만 이뤄집니다.
+ClearPDF Local v1.6.0 — 손가락 제거 + 더 가벼워진 앱
+- 책을 잡은 손가락이 페이지 가장자리에 같이 찍혔다면, 스캔한 페이지 메뉴의 'Remove finger'로 지워볼 수 있습니다. (손가락이 가린 글자까지 복원하지는 못합니다)
+- 앱 다운로드 용량을 크게 줄였습니다.
+- 모든 처리는 인터넷 없이 기기 안에서만 이뤄집니다.
 </ko-KR>
 
 <en-US>
-ClearPDF Local v1.5.0 — just flip pages and flattened scans stack up
-- Turn on the new "Auto-flatten" toggle and every auto-scanned page is flattened the moment it's captured.
-- Flip through a book and curved pages are captured and straightened on their own — no shutter taps, no per-page correction.
-- All of it runs on-device with no internet.
+ClearPDF Local v1.6.0 — finger removal + a lighter app
+- If a finger holding the book got caught at the page edge, tap "Remove finger" on a scanned page to erase it. (It can't restore text the finger was covering.)
+- The app download is now significantly smaller.
+- Everything runs on-device with no internet.
 </en-US>

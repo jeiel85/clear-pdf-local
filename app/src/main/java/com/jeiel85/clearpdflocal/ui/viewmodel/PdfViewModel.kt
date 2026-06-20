@@ -19,6 +19,7 @@ import com.jeiel85.clearpdflocal.domain.imaging.BitmapIo
 import com.jeiel85.clearpdflocal.domain.imaging.DewarpEngine
 import com.jeiel85.clearpdflocal.domain.imaging.DocumentDetector
 import com.jeiel85.clearpdflocal.domain.imaging.DocumentScanProcessor
+import com.jeiel85.clearpdflocal.domain.imaging.FingerRemover
 import com.jeiel85.clearpdflocal.domain.imaging.ScanMode
 import com.jeiel85.clearpdflocal.domain.imaging.ScannedPage
 import com.jeiel85.clearpdflocal.domain.usecase.ImageToPdfUseCase
@@ -349,6 +350,38 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
             } catch (e: Exception) {
                 Log.e("PdfViewModel", "Dewarp failed", e)
                 _operationMessage.emit("Flatten failed: ${e.message}")
+            } finally {
+                _isProcessingScan.value = false
+            }
+        }
+    }
+
+    /** Best-effort finger removal on a page's current image (terminal touch-up). */
+    fun applyFingerRemoval(index: Int) {
+        val pages = _scannedPages.value
+        if (index !in pages.indices) return
+        val page = pages[index]
+        viewModelScope.launch(Dispatchers.IO) {
+            _isProcessingScan.value = true
+            try {
+                val current = BitmapIo.decodeScaled(page.processedPath) ?: return@launch
+                val cleaned = FingerRemover.removeFingers(current)
+                current.recycle()
+                if (cleaned == null) {
+                    _operationMessage.emit("No finger detected to remove.")
+                    return@launch
+                }
+                val newProcessed = File(context.cacheDir, "scan_proc_${System.currentTimeMillis()}.jpg")
+                BitmapIo.saveJpeg(cleaned, newProcessed)
+                cleaned.recycle()
+                File(page.processedPath).delete()
+                _scannedPages.value = _scannedPages.value.toMutableList().also {
+                    it[index] = page.copy(processedPath = newProcessed.absolutePath)
+                }
+                _operationMessage.emit("Finger removal applied.")
+            } catch (e: Exception) {
+                Log.e("PdfViewModel", "Finger removal failed", e)
+                _operationMessage.emit("Finger removal failed: ${e.message}")
             } finally {
                 _isProcessingScan.value = false
             }
