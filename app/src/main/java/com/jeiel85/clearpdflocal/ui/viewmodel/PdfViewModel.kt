@@ -224,6 +224,9 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
     fun addCapturedPhoto(rawFile: File, autoFlatten: Boolean = false) {
         viewModelScope.launch(Dispatchers.IO) {
             _isProcessingScan.value = true
+            // Tracked so a mid-pipeline failure doesn't orphan these cache files.
+            var cleanupProcessed: File? = null
+            var cleanupDewarp: File? = null
             try {
                 val raw = BitmapIo.decodeScaled(rawFile.absolutePath)
                 if (raw == null) {
@@ -237,10 +240,12 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
                 val page: ScannedPage
                 if (flat != null) {
                     val dewarpFile = File(context.cacheDir, "scan_flat_${System.currentTimeMillis()}.jpg")
+                    cleanupDewarp = dewarpFile
                     BitmapIo.saveJpeg(flat, dewarpFile)
                     val enhanced = DocumentScanProcessor.enhanceOnly(flat, ScanMode.AUTO)
                     flat.recycle()
                     val processedFile = File(context.cacheDir, "scan_proc_${System.currentTimeMillis()}.jpg")
+                    cleanupProcessed = processedFile
                     BitmapIo.saveJpeg(enhanced, processedFile)
                     enhanced.recycle()
                     page = ScannedPage(
@@ -254,6 +259,7 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
                     val corners = DocumentDetector.detectCorners(raw)
                     val processed = DocumentScanProcessor.process(raw, corners, ScanMode.AUTO)
                     val processedFile = File(context.cacheDir, "scan_proc_${System.currentTimeMillis()}.jpg")
+                    cleanupProcessed = processedFile
                     BitmapIo.saveJpeg(processed, processedFile)
                     processed.recycle()
                     page = ScannedPage(
@@ -266,6 +272,8 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
                 raw.recycle()
                 _scannedPages.value = _scannedPages.value + page
             } catch (e: Exception) {
+                cleanupProcessed?.takeIf { it.exists() }?.delete()
+                cleanupDewarp?.takeIf { it.exists() }?.delete()
                 Log.e("PdfViewModel", "Scan processing failed", e)
                 _operationMessage.emit("Scan processing failed: ${e.message}")
             } finally {
@@ -299,10 +307,13 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
                 val newProcessed = File(context.cacheDir, "scan_proc_${System.currentTimeMillis()}.jpg")
                 BitmapIo.saveJpeg(processed, newProcessed)
                 processed.recycle()
-                File(page.processedPath).delete()
 
-                _scannedPages.value = _scannedPages.value.toMutableList().also {
-                    it[index] = page.copy(processedPath = newProcessed.absolutePath, mode = mode)
+                val cur = _scannedPages.value
+                val pos = cur.indexOfFirst { it.id == page.id }
+                if (pos < 0) { newProcessed.delete(); return@launch } // page removed mid-flight
+                File(page.processedPath).delete()
+                _scannedPages.value = cur.toMutableList().also {
+                    it[pos] = page.copy(processedPath = newProcessed.absolutePath, mode = mode)
                 }
                 _operationMessage.emit("Applied ${mode.name} mode.")
             } catch (e: Exception) {
@@ -338,10 +349,13 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
                 BitmapIo.saveJpeg(enhanced, newProcessed)
                 enhanced.recycle()
 
+                val cur = _scannedPages.value
+                val pos = cur.indexOfFirst { it.id == page.id }
+                if (pos < 0) { newProcessed.delete(); dewarpFile.delete(); return@launch }
                 File(page.processedPath).delete()
                 page.dewarpedPath?.let { File(it).delete() }
-                _scannedPages.value = _scannedPages.value.toMutableList().also {
-                    it[index] = page.copy(
+                _scannedPages.value = cur.toMutableList().also {
+                    it[pos] = page.copy(
                         processedPath = newProcessed.absolutePath,
                         dewarped = true,
                         dewarpedPath = dewarpFile.absolutePath
@@ -375,9 +389,12 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
                 val newProcessed = File(context.cacheDir, "scan_proc_${System.currentTimeMillis()}.jpg")
                 BitmapIo.saveJpeg(cleaned, newProcessed)
                 cleaned.recycle()
+                val cur = _scannedPages.value
+                val pos = cur.indexOfFirst { it.id == page.id }
+                if (pos < 0) { newProcessed.delete(); return@launch }
                 File(page.processedPath).delete()
-                _scannedPages.value = _scannedPages.value.toMutableList().also {
-                    it[index] = page.copy(processedPath = newProcessed.absolutePath)
+                _scannedPages.value = cur.toMutableList().also {
+                    it[pos] = page.copy(processedPath = newProcessed.absolutePath)
                 }
                 _operationMessage.emit("Finger removal applied.")
             } catch (e: Exception) {
@@ -407,9 +424,12 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
                 val newProcessed = File(context.cacheDir, "scan_proc_${System.currentTimeMillis()}.jpg")
                 BitmapIo.saveJpeg(cleaned, newProcessed)
                 cleaned.recycle()
+                val cur = _scannedPages.value
+                val pos = cur.indexOfFirst { it.id == page.id }
+                if (pos < 0) { newProcessed.delete(); return@launch }
                 File(page.processedPath).delete()
-                _scannedPages.value = _scannedPages.value.toMutableList().also {
-                    it[index] = page.copy(processedPath = newProcessed.absolutePath)
+                _scannedPages.value = cur.toMutableList().also {
+                    it[pos] = page.copy(processedPath = newProcessed.absolutePath)
                 }
                 _operationMessage.emit("Glare reduction applied.")
             } catch (e: Exception) {
@@ -450,6 +470,8 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
         val pages = _scannedPages.value
         if (pages.isEmpty()) return
         val paths = pages.map { it.processedPath }
+        // Stays on the Main dispatcher: the use-cases switch to IO internally, and onFinished
+        // touches navigation / Compose state which must run on the main thread.
         viewModelScope.launch {
             try {
                 val cleanName = if (outputName.endsWith(".pdf", ignoreCase = true)) outputName else "$outputName.pdf"

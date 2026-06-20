@@ -11,6 +11,8 @@ import org.opencv.core.Point
  * mode switches skip re-detection.
  */
 data class ScannedPage(
+    /** Stable identity so async reprocess ops re-resolve the page even if the list shifted. */
+    val id: String = java.util.UUID.randomUUID().toString(),
     val rawPath: String,
     val processedPath: String,
     val mode: ScanMode = ScanMode.AUTO,

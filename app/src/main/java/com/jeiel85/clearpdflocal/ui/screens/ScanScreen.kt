@@ -103,23 +103,28 @@ fun ScanScreen(
             .also { it.setAnalyzer(analysisExecutor, analyzer) }
     }
 
-    // Shared capture path used by both the shutter and auto-capture.
+    // Shared capture path used by both the shutter and auto-capture. Guarded so a
+    // not-yet-bound / failed camera can't crash on a shutter tap or auto-capture tick.
     val capturePhoto: () -> Unit = {
-        val tempPhoto = File(context.cacheDir, "scan_${System.currentTimeMillis()}.jpg")
-        val outputOptions = ImageCapture.OutputFileOptions.Builder(tempPhoto).build()
-        imageCapture.takePicture(
-            outputOptions,
-            ContextCompat.getMainExecutor(context),
-            object : ImageCapture.OnImageSavedCallback {
-                override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
-                    viewModel.addCapturedPhoto(tempPhoto, autoFlattenEnabled)
-                }
+        try {
+            val tempPhoto = File(context.cacheDir, "scan_${System.currentTimeMillis()}.jpg")
+            val outputOptions = ImageCapture.OutputFileOptions.Builder(tempPhoto).build()
+            imageCapture.takePicture(
+                outputOptions,
+                ContextCompat.getMainExecutor(context),
+                object : ImageCapture.OnImageSavedCallback {
+                    override fun onImageSaved(outputFileResults: ImageCapture.OutputFileResults) {
+                        viewModel.addCapturedPhoto(tempPhoto, autoFlattenEnabled)
+                    }
 
-                override fun onError(exception: ImageCaptureException) {
-                    Log.e("ScanScreen", "Fail capture picture", exception)
+                    override fun onError(exception: ImageCaptureException) {
+                        Log.e("ScanScreen", "Fail capture picture", exception)
+                    }
                 }
-            }
-        )
+            )
+        } catch (e: Exception) {
+            Log.e("ScanScreen", "Camera not ready for capture", e)
+        }
     }
 
     // Fire auto-capture when the analyzer reports a stable page (debounced).

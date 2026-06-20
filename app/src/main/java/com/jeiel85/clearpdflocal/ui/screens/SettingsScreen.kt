@@ -200,7 +200,7 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     Text(
-                        text = "Version 1.0.0 (Pure Offline Edition)",
+                        text = "Version ${com.jeiel85.clearpdflocal.BuildConfig.VERSION_NAME} (Pure Offline Edition)",
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Medium,
                         textAlign = TextAlign.Center,

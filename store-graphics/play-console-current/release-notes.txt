@@ -1,13 +1,13 @@
 <ko-KR>
-ClearPDF Local v1.6.1 — 반사(글레어) 줄이기
-- 광택지 등에서 작은 빛 반사가 함께 찍혔다면, 스캔한 페이지 메뉴의 'Reduce glare'로 줄여볼 수 있습니다.
-- 작은 반사에 한해 동작하며, 크게 번져 하얗게 날아간 부분은 복원하지 못합니다.
-- 모든 처리는 인터넷 없이 기기 안에서만 이뤄집니다.
+ClearPDF Local v1.6.2 — 안정성 개선
+- 스캔 페이지를 보정하는 도중 다른 페이지를 지워도 엉뚱한 페이지가 바뀌지 않도록 고쳤습니다.
+- 카메라 준비 중 촬영 시 드물게 발생하던 종료 문제를 막았습니다.
+- 설정 화면의 버전 표시를 바로잡았고, 자잘한 내부 정리를 했습니다.
 </ko-KR>
 
 <en-US>
-ClearPDF Local v1.6.1 — glare reduction
-- If small light reflections got caught (e.g. on glossy paper), tap "Reduce glare" on a scanned page to soften them.
-- It only handles small reflections; large blown-out white areas can't be recovered.
-- Everything runs on-device with no internet.
+ClearPDF Local v1.6.2 — stability fixes
+- Fixed a case where deleting a page while another was still processing could change the wrong page.
+- Prevented a rare crash when capturing before the camera was ready.
+- Corrected the version shown on the Settings screen, plus minor internal cleanup.
 </en-US>

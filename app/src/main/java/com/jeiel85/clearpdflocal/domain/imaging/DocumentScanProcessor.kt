@@ -28,18 +28,20 @@ object DocumentScanProcessor {
         OpenCvInitializer.ensureInitialized()
 
         val rgba = Mat()
-        Utils.bitmapToMat(src, rgba)
-
-        val warped = if (corners != null && corners.size == 4) warp(rgba, corners) else rgba.clone()
-        rgba.release()
-
-        val enhanced = enhance(warped, mode)
-        warped.release()
-
-        val out = Bitmap.createBitmap(enhanced.width(), enhanced.height(), Bitmap.Config.ARGB_8888)
-        Utils.matToBitmap(enhanced, out)
-        enhanced.release()
-        return out
+        var warped: Mat? = null
+        var enhanced: Mat? = null
+        try {
+            Utils.bitmapToMat(src, rgba)
+            warped = if (corners != null && corners.size == 4) warp(rgba, corners) else rgba.clone()
+            enhanced = enhance(warped, mode)
+            val out = Bitmap.createBitmap(enhanced.width(), enhanced.height(), Bitmap.Config.ARGB_8888)
+            Utils.matToBitmap(enhanced, out)
+            return out
+        } finally {
+            rgba.release()
+            warped?.release()
+            enhanced?.release()
+        }
     }
 
     /**
@@ -49,13 +51,17 @@ object DocumentScanProcessor {
     fun enhanceOnly(src: Bitmap, mode: ScanMode): Bitmap {
         OpenCvInitializer.ensureInitialized()
         val rgba = Mat()
-        Utils.bitmapToMat(src, rgba)
-        val enhanced = enhance(rgba, mode)
-        rgba.release()
-        val out = Bitmap.createBitmap(enhanced.width(), enhanced.height(), Bitmap.Config.ARGB_8888)
-        Utils.matToBitmap(enhanced, out)
-        enhanced.release()
-        return out
+        var enhanced: Mat? = null
+        try {
+            Utils.bitmapToMat(src, rgba)
+            enhanced = enhance(rgba, mode)
+            val out = Bitmap.createBitmap(enhanced.width(), enhanced.height(), Bitmap.Config.ARGB_8888)
+            Utils.matToBitmap(enhanced, out)
+            return out
+        } finally {
+            rgba.release()
+            enhanced?.release()
+        }
     }
 
     /** Perspective-warps the quad to a rectangle sized by its own edge lengths. */

@@ -36,46 +36,46 @@ object SearchablePdfUseCase {
     ): Result<File> = withContext(Dispatchers.IO) {
         try {
             PDFBoxResourceLoader.init(context)
-            val doc = PDDocument()
-            val font = context.assets.open("fonts/NanumGothic-Regular.ttf").use {
-                PDType0Font.load(doc, it, true) // embedSubset = true → only used glyphs are stored
-            }
+            PDDocument().use { doc ->
+                val font = context.assets.open("fonts/NanumGothic-Regular.ttf").use {
+                    PDType0Font.load(doc, it, true) // embedSubset = true → only used glyphs are stored
+                }
 
-            for (path in imagePaths) {
-                val bitmap = BitmapIo.decodeScaled(path, MAX_DIM) ?: continue
-                val w = bitmap.width.toFloat()
-                val h = bitmap.height.toFloat()
+                for (path in imagePaths) {
+                    val bitmap = BitmapIo.decodeScaled(path, MAX_DIM) ?: continue
+                    val w = bitmap.width.toFloat()
+                    val h = bitmap.height.toFloat()
 
-                val page = PDPage(PDRectangle(w, h))
-                doc.addPage(page)
-                val image = JPEGFactory.createFromImage(doc, bitmap, 0.8f)
+                    val page = PDPage(PDRectangle(w, h))
+                    doc.addPage(page)
+                    val image = JPEGFactory.createFromImage(doc, bitmap, 0.8f)
 
-                PDPageContentStream(doc, page).use { cs ->
-                    cs.drawImage(image, 0f, 0f, w, h)
+                    PDPageContentStream(doc, page).use { cs ->
+                        cs.drawImage(image, 0f, 0f, w, h)
 
-                    val words = TessOcrEngine.recognizeWords(context, bitmap)
-                    for (word in words) {
-                        val box = word.box
-                        val fontSize = box.height().toFloat().coerceIn(1f, h)
-                        try {
-                            cs.beginText()
-                            cs.setRenderingMode(RenderingMode.NEITHER) // invisible text layer
-                            cs.setFont(font, fontSize)
-                            // PDF origin is bottom-left; image/Tesseract is top-left → flip Y.
-                            cs.newLineAtOffset(box.left.toFloat(), h - box.bottom.toFloat())
-                            cs.showText(word.text)
-                            cs.endText()
-                        } catch (e: Exception) {
-                            // Font can't encode a glyph (or similar) — skip the word, keep going.
-                            try { cs.endText() } catch (_: Exception) {}
+                        val words = TessOcrEngine.recognizeWords(context, bitmap)
+                        for (word in words) {
+                            val box = word.box
+                            val fontSize = box.height().toFloat().coerceIn(1f, h)
+                            try {
+                                cs.beginText()
+                                cs.setRenderingMode(RenderingMode.NEITHER) // invisible text layer
+                                cs.setFont(font, fontSize)
+                                // PDF origin is bottom-left; image/Tesseract is top-left → flip Y.
+                                cs.newLineAtOffset(box.left.toFloat(), h - box.bottom.toFloat())
+                                cs.showText(word.text)
+                                cs.endText()
+                            } catch (e: Exception) {
+                                // Font can't encode a glyph (or similar) — skip the word, keep going.
+                                try { cs.endText() } catch (_: Exception) {}
+                            }
                         }
                     }
+                    bitmap.recycle()
                 }
-                bitmap.recycle()
-            }
 
-            FileOutputStream(outputFile).use { doc.save(it) }
-            doc.close()
+                FileOutputStream(outputFile).use { doc.save(it) }
+            }
             Result.success(outputFile)
         } catch (e: Exception) {
             Result.failure(e)
