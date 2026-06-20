@@ -113,8 +113,8 @@ android {
     applicationId = "com.jeiel85.clearpdflocal"
     minSdk = 24
     targetSdk = 36
-    versionCode = 5
-    versionName = "1.3.0"
+    versionCode = 6
+    versionName = "1.4.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -233,6 +233,7 @@ dependencies {
   implementation(libs.opencv)
   implementation(libs.tesseract4android)
   implementation(libs.pdfbox.android)
+  implementation(libs.onnxruntime.android)
   implementation(libs.kotlinx.coroutines.android)
   implementation(libs.kotlinx.coroutines.core)
   testImplementation(libs.androidx.compose.ui.test.junit4)

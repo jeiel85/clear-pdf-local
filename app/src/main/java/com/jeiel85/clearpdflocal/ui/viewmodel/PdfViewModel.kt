@@ -16,6 +16,7 @@ import com.jeiel85.clearpdflocal.data.model.RecentFile
 import com.jeiel85.clearpdflocal.data.repository.BookmarkRepository
 import com.jeiel85.clearpdflocal.data.repository.RecentFileRepository
 import com.jeiel85.clearpdflocal.domain.imaging.BitmapIo
+import com.jeiel85.clearpdflocal.domain.imaging.DewarpEngine
 import com.jeiel85.clearpdflocal.domain.imaging.DocumentDetector
 import com.jeiel85.clearpdflocal.domain.imaging.DocumentScanProcessor
 import com.jeiel85.clearpdflocal.domain.imaging.ScanMode
@@ -250,7 +251,8 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    /** Re-applies a different enhancement [mode] to an existing page, reprocessing from raw. */
+    /** Re-applies a different enhancement [mode]. Re-enhances the flattened image for dewarped
+     *  pages (cheap, no re-dewarp), else reprocesses from the raw photo. */
     fun applyScanMode(index: Int, mode: ScanMode) {
         val pages = _scannedPages.value
         if (index !in pages.indices) return
@@ -258,9 +260,17 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch(Dispatchers.IO) {
             _isProcessingScan.value = true
             try {
-                val raw = BitmapIo.decodeScaled(page.rawPath) ?: return@launch
-                val processed = DocumentScanProcessor.process(raw, page.corners, mode)
-                raw.recycle()
+                val processed = if (page.dewarped && page.dewarpedPath != null) {
+                    val flat = BitmapIo.decodeScaled(page.dewarpedPath) ?: return@launch
+                    val out = DocumentScanProcessor.enhanceOnly(flat, mode)
+                    flat.recycle()
+                    out
+                } else {
+                    val raw = BitmapIo.decodeScaled(page.rawPath) ?: return@launch
+                    val out = DocumentScanProcessor.process(raw, page.corners, mode)
+                    raw.recycle()
+                    out
+                }
 
                 // Write to a fresh file so Coil reloads instead of serving the cached image.
                 val newProcessed = File(context.cacheDir, "scan_proc_${System.currentTimeMillis()}.jpg")
@@ -280,12 +290,57 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Flattens a curved page with the neural dewarp model, then re-applies the page's mode. */
+    fun applyDewarp(index: Int) {
+        val pages = _scannedPages.value
+        if (index !in pages.indices) return
+        val page = pages[index]
+        viewModelScope.launch(Dispatchers.IO) {
+            _isProcessingScan.value = true
+            try {
+                val raw = BitmapIo.decodeScaled(page.rawPath) ?: return@launch
+                val flat = DewarpEngine.dewarp(context, raw)
+                raw.recycle()
+                if (flat == null) {
+                    _operationMessage.emit("Couldn't flatten this page.")
+                    return@launch
+                }
+
+                val dewarpFile = File(context.cacheDir, "scan_flat_${System.currentTimeMillis()}.jpg")
+                BitmapIo.saveJpeg(flat, dewarpFile)
+                val enhanced = DocumentScanProcessor.enhanceOnly(flat, page.mode)
+                flat.recycle()
+
+                val newProcessed = File(context.cacheDir, "scan_proc_${System.currentTimeMillis()}.jpg")
+                BitmapIo.saveJpeg(enhanced, newProcessed)
+                enhanced.recycle()
+
+                File(page.processedPath).delete()
+                page.dewarpedPath?.let { File(it).delete() }
+                _scannedPages.value = _scannedPages.value.toMutableList().also {
+                    it[index] = page.copy(
+                        processedPath = newProcessed.absolutePath,
+                        dewarped = true,
+                        dewarpedPath = dewarpFile.absolutePath
+                    )
+                }
+                _operationMessage.emit("Page flattened.")
+            } catch (e: Exception) {
+                Log.e("PdfViewModel", "Dewarp failed", e)
+                _operationMessage.emit("Flatten failed: ${e.message}")
+            } finally {
+                _isProcessingScan.value = false
+            }
+        }
+    }
+
     fun removeScannedPage(index: Int) {
         val pages = _scannedPages.value.toMutableList()
         if (index in pages.indices) {
             val page = pages.removeAt(index)
             File(page.rawPath).delete()
             File(page.processedPath).delete()
+            page.dewarpedPath?.let { File(it).delete() }
             _scannedPages.value = pages
         }
     }
@@ -294,6 +349,7 @@ class PdfViewModel(application: Application) : AndroidViewModel(application) {
         _scannedPages.value.forEach {
             File(it.rawPath).delete()
             File(it.processedPath).delete()
+            it.dewarpedPath?.let { p -> File(p).delete() }
         }
         _scannedPages.value = emptyList()
     }

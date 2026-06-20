@@ -42,6 +42,22 @@ object DocumentScanProcessor {
         return out
     }
 
+    /**
+     * Applies only the [mode] enhancement (no perspective warp). Used after neural dewarp,
+     * where the geometry has already been corrected by [DewarpEngine].
+     */
+    fun enhanceOnly(src: Bitmap, mode: ScanMode): Bitmap {
+        OpenCvInitializer.ensureInitialized()
+        val rgba = Mat()
+        Utils.bitmapToMat(src, rgba)
+        val enhanced = enhance(rgba, mode)
+        rgba.release()
+        val out = Bitmap.createBitmap(enhanced.width(), enhanced.height(), Bitmap.Config.ARGB_8888)
+        Utils.matToBitmap(enhanced, out)
+        enhanced.release()
+        return out
+    }
+
     /** Perspective-warps the quad to a rectangle sized by its own edge lengths. */
     private fun warp(rgba: Mat, c: List<Point>): Mat {
         val (tl, tr, br, bl) = c

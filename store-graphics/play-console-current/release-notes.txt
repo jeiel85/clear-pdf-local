@@ -1,15 +1,15 @@
 <ko-KR>
-ClearPDF Local v1.3.0 — 검색 가능한 PDF (글자 인식)
-- 스캔 저장 시 '검색 가능 PDF(OCR)'를 켜면 기기에서 글자를 인식해, PDF 안에서 검색·선택·복사가 됩니다.
-- 한국어와 영어를 함께 인식합니다.
-- 글자 인식도 전부 인터넷 없이 기기 안에서만 처리됩니다 — 문서는 밖으로 나가지 않습니다.
-- 인식이 어려운 페이지는 자동으로 일반 PDF로 저장되어 저장이 실패하지 않습니다.
+ClearPDF Local v1.4.0 — 휜 책도 펴서 스캔 (AI 곡면 보정)
+- 펼친 책처럼 휘어진 페이지를 찍었을 때, 스캔한 페이지를 탭하면 나오는 메뉴에서 'Flatten'을 누르면 반듯하게 펴줍니다.
+- 굽은 글줄과 책등 곡률을 평평한 문서로 보정해, 글자 인식(OCR)도 더 깔끔해집니다.
+- 이 보정도 전부 인터넷 없이 기기 안에서만 처리됩니다.
+- 기기에서 빠르게 동작합니다.
 </ko-KR>
 
 <en-US>
-ClearPDF Local v1.3.0 — searchable PDFs (text recognition)
-- Turn on "Searchable PDF (OCR)" when saving a scan to recognize the text, so the PDF is searchable, selectable, and copyable.
-- Recognizes Korean and English together.
-- Text recognition runs fully on-device with no internet — your documents never leave the phone.
-- Pages that can't be recognized fall back to a normal PDF, so saving never fails.
+ClearPDF Local v1.4.0 — flatten curved book pages (AI dewarping)
+- Photograph a curved, open book, then tap the scanned page and choose "Flatten" to straighten the bent page into a flat document.
+- Curved text lines and a bowed spine are corrected to a flat page, which also makes text recognition (OCR) cleaner.
+- This correction runs fully on-device with no internet.
+- Fast on-device processing.
 </en-US>

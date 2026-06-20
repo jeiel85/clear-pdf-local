@@ -491,6 +491,26 @@ fun ScanScreen(
                         }
                     }
 
+                    // Neural curved-page flattening (dewarp)
+                    val page = scannedPages.getOrNull(idx)
+                    Button(
+                        onClick = {
+                            viewModel.applyDewarp(idx)
+                            showFilterOptionsSheet = false
+                        },
+                        enabled = !isProcessing,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(imageVector = Icons.Default.AutoFixHigh, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(if (page?.dewarped == true) "Re-flatten curved page (AI)" else "Flatten curved page (AI)")
+                    }
+                    Text(
+                        "For photos of curved books — flattens the bent page. Takes a moment.",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
                     // Delete current frame
                     Button(
                         onClick = {

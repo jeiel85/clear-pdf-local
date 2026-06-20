@@ -14,5 +14,9 @@ data class ScannedPage(
     val rawPath: String,
     val processedPath: String,
     val mode: ScanMode = ScanMode.AUTO,
-    val corners: List<Point>? = null
+    val corners: List<Point>? = null,
+    /** True once the AI dewarp (curved-page flattening) has been applied to this page. */
+    val dewarped: Boolean = false,
+    /** The geometrically-flattened image (pre-enhancement) cached so mode switches are cheap. */
+    val dewarpedPath: String? = null
 )
