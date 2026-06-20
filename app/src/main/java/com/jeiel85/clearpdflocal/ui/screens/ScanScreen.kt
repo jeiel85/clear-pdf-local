@@ -544,6 +544,25 @@ fun ScanScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
+                    // Best-effort glare reduction
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.applyGlareReduction(idx)
+                            showFilterOptionsSheet = false
+                        },
+                        enabled = !isProcessing,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(imageVector = Icons.Default.Flare, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Reduce glare")
+                    }
+                    Text(
+                        "Best-effort — softens small light reflections; large blown-out areas can't be recovered.",
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
                     // Delete current frame
                     Button(
                         onClick = {

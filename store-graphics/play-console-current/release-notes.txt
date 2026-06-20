@@ -1,13 +1,13 @@
 <ko-KR>
-ClearPDF Local v1.6.0 — 손가락 제거 + 더 가벼워진 앱
-- 책을 잡은 손가락이 페이지 가장자리에 같이 찍혔다면, 스캔한 페이지 메뉴의 'Remove finger'로 지워볼 수 있습니다. (손가락이 가린 글자까지 복원하지는 못합니다)
-- 앱 다운로드 용량을 크게 줄였습니다.
+ClearPDF Local v1.6.1 — 반사(글레어) 줄이기
+- 광택지 등에서 작은 빛 반사가 함께 찍혔다면, 스캔한 페이지 메뉴의 'Reduce glare'로 줄여볼 수 있습니다.
+- 작은 반사에 한해 동작하며, 크게 번져 하얗게 날아간 부분은 복원하지 못합니다.
 - 모든 처리는 인터넷 없이 기기 안에서만 이뤄집니다.
 </ko-KR>
 
 <en-US>
-ClearPDF Local v1.6.0 — finger removal + a lighter app
-- If a finger holding the book got caught at the page edge, tap "Remove finger" on a scanned page to erase it. (It can't restore text the finger was covering.)
-- The app download is now significantly smaller.
+ClearPDF Local v1.6.1 — glare reduction
+- If small light reflections got caught (e.g. on glossy paper), tap "Reduce glare" on a scanned page to soften them.
+- It only handles small reflections; large blown-out white areas can't be recovered.
 - Everything runs on-device with no internet.
 </en-US>
