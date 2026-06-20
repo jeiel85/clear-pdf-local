@@ -1,10 +1,10 @@
-# ClearPDF Local — *openFlat*
+# ClearPDF Local — *open-local-scan*
 
-> **openFlat — 유료 스캐너(vFlat 등)의 프리미엄 기능을, 오픈소스로 그리고 100% 오프라인으로.**
+> **open-local-scan — 유료 스캐너(vFlat 등)의 프리미엄 기능을, 오픈소스로 그리고 100% 오프라인으로.**
 >
 > AI 곡면 보정·자동 스캔·온디바이스 OCR까지, 유료 앱에서나 보던 문서 스캔 기능을 **인터넷 권한 없이** 기기 안에서만 처리하는 오픈소스 Android 문서 스캐너 & PDF 도구입니다.
 
-**ClearPDF Local** (a.k.a. **openFlat**) is a free, open-source, fully-offline document scanner and PDF toolkit for Android — a privacy-first alternative to premium scanners like vFlat. AI curved-page dewarping, auto-scan, and on-device OCR all run on-device with **zero network requests** — the app never even declares the `INTERNET` permission. Built with Kotlin and Jetpack Compose.
+**ClearPDF Local** (a.k.a. **open-local-scan**) is a free, open-source, fully-offline document scanner and PDF toolkit for Android — a privacy-first alternative to premium scanners like vFlat. AI curved-page dewarping, auto-scan, and on-device OCR all run on-device with **zero network requests** — the app never even declares the `INTERNET` permission. Built with Kotlin and Jetpack Compose.
 
 ---
 
